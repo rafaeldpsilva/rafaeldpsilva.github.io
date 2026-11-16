@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <style>
 :root {
   --paper: #f6f3ec; --card: #fffdf8; --ink: #1d1b17; --muted: #6a645a; --rule: #d8d1c3;
@@ -120,6 +121,95 @@ figcaption b { color: var(--ink); font-weight: 600; }
 .detail li { margin: 0 0 6px; }
 .refs { margin-top: 14px; font-size: 14px; color: var(--muted); }
 .refs a { margin-right: 14px; }
+
+/* ---- live demos (#30). Room colours: categorical slots 1-5 for rooms with AC, bathroom grey.
+   Validated light + dark (dataviz validator, adjacent pairs: CVD ΔE ≥ 8.4, normal ≥ 19.3).
+   All-pairs fails beyond 3 slots and light slots 3-5 < 3:1 on the card, so identity never
+   rests on colour alone: rooms labelled at line ends, hover tooltips, presses table. */
+:root { --r1: #2a78d6; --r2: #eb6834; --r3: #1baf7a; --r4: #eda100; --r5: #e87ba4; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --r1: #3987e5; --r2: #d95926; --r3: #199e70; --r4: #c98500; --r5: #d55181; }
+}
+:root[data-theme="dark"] { --r1: #3987e5; --r2: #d95926; --r3: #199e70; --r4: #c98500; --r5: #d55181; }
+
+.demo { margin-top: 8px; }
+.demo h3 { margin-top: 28px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; font-size: 14px; margin: 0 0 12px; }
+.controls label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); font-variant: small-caps; letter-spacing: 0.04em; }
+.controls label.grow { flex: 1 1 220px; }
+.controls input, .controls select, .knob input {
+  font-family: var(--mono); font-size: 13px; background: var(--card); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 2px; padding: 3px 6px; max-width: 100%;
+}
+.controls input[type="number"] { width: 76px; }
+.controls input[type="range"] { padding: 0; accent-color: var(--accent); }
+.knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px 28px;
+  background: var(--card); border: 1px solid var(--rule); padding: 12px 16px; margin-bottom: 12px; }
+.knob { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px dotted var(--rule); padding: 3px 0; }
+.knob .k { font-family: var(--mono); font-size: 12.5px; }
+.knob.changed .k { color: var(--accent); font-weight: 500; }
+.knob .sub { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: end; }
+.knob input { width: 66px; }
+.knob .pair { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.knob:has(small) { grid-column: 1 / -1; }
+.knob small { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+button.act, button.ghost { font: inherit; font-size: 14px; border-radius: 2px; padding: 4px 16px; cursor: pointer; border: 1px solid var(--ink); }
+button.act { background: var(--ink); color: var(--paper); }
+button.ghost { background: none; color: var(--ink); border-color: var(--rule); }
+button.act:disabled, button.ghost:disabled { opacity: 0.45; cursor: not-allowed; }
+.metabox { font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 22px; }
+.metabox b { color: var(--ink); font-family: var(--mono); font-weight: 500; font-size: 12.5px; }
+.note { font-size: 14px; color: var(--muted); font-style: italic; margin: 0 0 10px; }
+.error { color: var(--accent); font-size: 14px; }
+.sw { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+details.tbl { margin-top: 10px; font-size: 14px; }
+details.tbl summary { cursor: pointer; color: var(--muted); }
+.tip { position: fixed; pointer-events: none; background: var(--card); color: var(--ink); border: 1px solid var(--ink);
+  padding: 6px 9px; font-size: 13px; line-height: 1.45; z-index: 10; max-width: 300px; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+
+.edge.label { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.edge-hit { fill: none; stroke: transparent; stroke-width: 14; }
+.schema-edge { cursor: pointer; outline: none; }
+.schema-edge:hover .edge, .schema-edge:focus-visible .edge { stroke-width: 2.4; }
+.schema-edge.sel .edge { stroke: var(--accent); stroke-width: 2; }
+.schema-edge.sel .edge-label { fill: var(--accent); }
+
+.viz text { fill: var(--muted); font-size: 12px; font-family: var(--serif); }
+.viz text.ink { fill: var(--ink); }
+.viz .axis text { font-family: var(--mono); font-size: 11px; }
+.viz .axis path, .viz .axis line { stroke: var(--rule); }
+.viz .grid line { stroke: var(--rule); stroke-dasharray: 2 3; }
+.viz .temp { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.viz .setpoint { stroke-width: 1.5; stroke-dasharray: 6 4; }
+.viz .swatch { stroke-width: 3; stroke-linecap: round; }
+.viz .mu line { stroke: var(--muted); stroke-dasharray: 1 4; stroke-width: 1.3; }
+.viz .mu text { font-style: italic; font-size: 11.5px; }
+.viz .cross { stroke: var(--ink); stroke-opacity: 0.45; pointer-events: none; }
+.viz .hit, .viz .hitpad { fill: transparent; }
+.viz .press .dot-m { fill: currentColor; stroke: var(--card); stroke-width: 2; }
+.viz .press:not(.named) .dot-m { fill: var(--card); stroke: currentColor; stroke-width: 2; }
+.viz .press path { stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.viz .stay { pointer-events: none; stroke: var(--card); stroke-width: 1; }
+.viz .lane-label { font-family: var(--mono); font-size: 11.5px; fill: var(--ink); }
+.viz .lane-head { font-variant: small-caps; letter-spacing: 0.06em; }
+.viz .e { stroke: var(--rule); stroke-width: 1.3; fill: none; }
+.viz .adj { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
+.viz .space rect { fill: var(--card); stroke: var(--ink); }
+.viz .nm { fill: var(--ink); font-weight: 600; font-size: 13px; }
+.viz .val { font-family: var(--mono); font-size: 11px; }
+.viz .small { font-family: var(--mono); font-size: 10.5px; }
+.viz .sensor path { fill: var(--card); stroke: var(--ink); stroke-width: 1.3; }
+.viz .device .box { fill: var(--card); stroke: var(--ink); stroke-width: 1.3; }
+.viz .device.on .box { fill: var(--ink); }
+.viz .device .ring { fill: none; stroke: none; }
+.viz .device.lab .ring { stroke: var(--accent); stroke-width: 2; }
+.viz .yb { fill: var(--accent); font-family: var(--mono); font-size: 11px; }
+.viz .actuator circle { fill: var(--card); stroke: var(--muted); stroke-width: 1.2; }
+.viz .user circle { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
+.viz .user text { fill: var(--ink); font-family: var(--mono); font-size: 11px; }
+.viz .g-loc line { stroke: var(--accent); stroke-width: 1.5; }
+.viz .lab-a { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.viz .lab-a-t { fill: var(--accent); font-family: var(--mono); font-size: 11px; }
 
 footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 </style>
@@ -246,7 +336,182 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
   <section v-for="s in sections.slice(2)" :key="s.id" :id="s.id">
     <h2><span class="n">§{{ s.n }}</span>{{ s.title }}</h2>
     <p class="lede">{{ s.lede }}</p>
-    <div class="pending">{{ s.pending }}</div>
+
+    <!-- §3 why a graph: argument + interactive schema -->
+    <div v-if="s.id === 'graph'">
+      <div class="cols">
+        <div>
+          <h3>Why not a table</h3>
+          <p>Comfort is relational. Whether a press means “too cold for me” or “too cold for us” depends on who
+            else is in the room, which device serves it, and what the sensor reads. A row per person loses that;
+            a conflict is simply two <i>located_in</i> edges into the same space.</p>
+          <p>Buildings differ in size and shape: one to four people, three to seven rooms. A graph neural network
+            applies the same weights to every node of a type, so one model serves every house, including houses it
+            has never seen (the building holdout).</p>
+        </div>
+        <div>
+          <h3>Why heterogeneous</h3>
+          <p>People, rooms, sensors and devices carry different features, so each type gets its own parameters
+            (<code>to_hetero</code>). Messages pass along typed edges: a person's representation hears the room's
+            temperature through <i>sensor → space → user</i> and the device state through <i>device → space → user</i>.</p>
+          <p>One graph per 15-minute window holds only the present. Long-term preference lives in a learned
+            embedding per person, shared by every window in which they appear.</p>
+        </div>
+      </div>
+      <figure>
+        <div class="figure-frame">
+          <svg viewBox="0 0 1100 540" role="img" aria-labelledby="schema-title schema-desc">
+            <title id="schema-title">Graph schema: node and edge types</title>
+            <desc id="schema-desc">Users are located in spaces; sensors are in spaces; devices are installed in spaces; actuators act on devices; spaces are adjacent to spaces. The prefers edge from user to device is a label only, never input. Camera and activity nodes are planned.</desc>
+            <g v-for="e in schemaEdges" :key="e.id" :class="['schema-edge', schemaSel === e.id && 'sel']" tabindex="0" role="button"
+               :aria-label="e.title + ': show how and why'" :aria-pressed="schemaSel === e.id"
+               @click="schemaSel = e.id" @keydown.enter.prevent="schemaSel = e.id" @keydown.space.prevent="schemaSel = e.id">
+              <path :d="e.d" class="edge-hit"/>
+              <path :d="e.d" :class="['edge', e.kind]" :marker-end="e.kind === 'label' ? 'url(#arr-loop)' : 'url(#arr)'"/>
+              <text :x="e.lx" :y="e.ly" :text-anchor="e.anchor || 'middle'" :class="['edge-label', e.kind === 'label' && 'loop']">{{ e.label }}</text>
+            </g>
+            <g v-for="n in schemaNodes" :key="n.id" :class="['node', n.status === 'plan' && 'dashed', schemaSel === n.id && 'sel']"
+               tabindex="0" role="button" :aria-label="n.title + ' node: show how and why'" :aria-pressed="schemaSel === n.id"
+               @click="schemaSel = n.id" @keydown.enter.prevent="schemaSel = n.id" @keydown.space.prevent="schemaSel = n.id">
+              <rect :x="n.x" :y="n.y" width="200" height="84" rx="2"/>
+              <text class="title" :x="n.x + 14" :y="n.y + 28">{{ n.title }}</text>
+              <circle :cx="n.x + 186" :cy="n.y + 22" r="4" :class="'st-' + n.status"/>
+              <text v-for="(l, i) in n.lines" :key="i" class="line" :x="n.x + 14" :y="n.y + 52 + i * 20">{{ l }}</text>
+            </g>
+          </svg>
+        </div>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--done)"></i>built</span>
+          <span><i class="dot" style="background:var(--plan)"></i>planned (dashed)</span>
+          <span>— input edge (static or per window)</span>
+          <span style="color:var(--accent)">- - label only, never input</span>
+          <span>every input edge also runs in reverse</span>
+        </div>
+        <figcaption><b>Figure 2.</b> The schema of one snapshot as <code>build.py</code> writes it. Solid types exist
+          today; dashed ones are planned (activity in S2, camera in the real building). The accent edge is what the
+          model must predict, so it never appears as input. Select a node or edge for its features and the reasoning
+          behind it.</figcaption>
+      </figure>
+      <div class="detail" v-if="schemaSelected" aria-live="polite">
+        <h4>{{ schemaSelected.title }}</h4>
+        <div class="meta">
+          <span><b :style="{ color: 'var(--' + schemaSelected.status + ')' }">● {{ statusText[schemaSelected.status] }}</b></span>
+          <span>{{ schemaSelected.where }}</span>
+        </div>
+        <div class="cols">
+          <div><h3>How</h3><ul><li v-for="(t, i) in schemaSelected.how" :key="i" v-html="t"></li></ul></div>
+          <div><h3>Why</h3><ul><li v-for="(t, i) in schemaSelected.why" :key="i" v-html="t"></li></ul></div>
+        </div>
+      </div>
+      <h3 style="margin-top:28px">Left out on purpose</h3>
+      <table class="obj">
+        <thead><tr><th>Not in the graph</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>context node</td><td>Time, weather and occupancy are shared by every room; as space features they add the same information without a hub node connected to everything.</td></tr>
+          <tr><td>preference node</td><td>Preference is Head A's output. As a node it would put the answer in the input.</td></tr>
+          <tr><td>co_present edge</td><td>Two <i>located_in</i> edges into one space already say it, and Head B attends over everyone in a room. Re-added only if an ablation shows a gain.</td></tr>
+          <tr><td>press as input</td><td>A press inside the window is the label. Setpoints are read strictly before the window starts, so the answer cannot leak in.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- §4 live demo: knobs + run + meta + house timeline -->
+    <div class="demo" v-else-if="s.id === 'simulator'">
+      <p class="error" v-if="demoError">{{ demoError }}</p>
+      <h3>Knobs</h3>
+      <p class="note" v-if="!live">Static export: knobs are read-only. Run <code>python server.py</code> locally to simulate.</p>
+      <p class="note" v-else>Exploration only: every number in a paper comes from a scripted run (D16). A run writes <code>ui.db</code>, never <code>sim.db</code>.</p>
+      <div class="knobs" v-if="knobEdits">
+        <div v-for="(v, k) in knobEdits" :key="k" :class="['knob', k in changedKnobs && 'changed']">
+          <span class="k">{{ k }}</span>
+          <span class="sub" v-if="typeof v === 'number'">
+            <input type="number" step="any" v-model.number="knobEdits[k]" :disabled="!live" :aria-label="k">
+          </span>
+          <span class="sub" v-else>
+            <span v-for="(_, i) in v" :key="i" class="pair">
+              <small v-if="!Array.isArray(v)">{{ i }}</small>
+              <input type="number" step="any" v-model.number="knobEdits[k][i]" :disabled="!live" :aria-label="k + ' ' + i">
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="controls">
+        <label>houses<input type="number" min="1" :max="caps.houses" v-model.number="runArgs.houses" :disabled="!live"></label>
+        <label>days<input type="number" min="1" :max="caps.days" v-model.number="runArgs.days" :disabled="!live"></label>
+        <label>seed<input type="number" v-model.number="runArgs.seed" :disabled="!live"></label>
+        <button class="act" @click="run" :disabled="!live || running">{{ running ? 'Running…' : 'Run' }}</button>
+        <button class="ghost" @click="resetKnobs" :disabled="!live || !Object.keys(changedKnobs).length">Reset knobs</button>
+      </div>
+      <div class="metabox" v-if="meta" aria-live="polite">
+        <span>database <b>{{ dbName }}.db</b></span>
+        <span v-if="meta.note">{{ meta.note }}</span>
+        <template v-else>
+          <span>seed <b>{{ meta.seed }}</b></span>
+          <span>size <b>{{ meta.n_houses }} houses × {{ meta.n_days }} days</b></span>
+          <span>code <b>{{ meta.git_hash.slice(0, 7) }}{{ meta.git_dirty === 'true' ? ' + uncommitted' : '' }}</b></span>
+          <span>created <b>{{ meta.created }}</b></span>
+          <span>overrides <b>{{ metaOverrides || 'none' }}</b></span>
+        </template>
+      </div>
+
+      <h3>One house, one day</h3>
+      <div class="controls">
+        <label v-if="live">database
+          <select v-model="dbName" @change="loadDb"><option value="ui">ui.db (UI runs)</option><option value="sim">sim.db (scripted)</option></select>
+        </label>
+        <label>house<select v-model.number="b" @change="loadHouse"><option v-for="h in buildingList" :key="h.id" :value="h.id">{{ houseLabel(h) }}</option></select></label>
+        <label>day<select v-model.number="day" @change="loadHouse"><option v-for="d in dayList" :key="d" :value="d">{{ dayLabel(d) }}</option></select></label>
+      </div>
+      <figure>
+        <div class="figure-frame"><svg id="tl-svg" class="viz" role="img" aria-label="Room temperatures, setpoints, presses and presence for one house over one day"></svg></div>
+        <div class="legend" v-if="tl">
+          <span v-for="r in Object.keys(tl.temps)" :key="r"><i class="sw" :style="{ background: roomColor(r) }"></i>{{ r }}</span>
+          <span>— temperature</span><span>- - setpoint</span><span>● named press</span><span>○ anonymous press</span><span>× turned off</span><span>··· μ* hidden preference</span>
+        </div>
+        <figcaption><b>Figure 3.</b> One simulated house over one day. Top: sensor temperature per room (solid), HVAC
+          setpoint (dashed), presses where they happened. Named presses come through Home Assistant; remote presses are
+          anonymous. Dotted lines show each person's hidden preference <i>μ*</i>, known only in simulation. Bottom: where each
+          person is (colour = room). Hover for values.</figcaption>
+        <details class="tbl" v-if="tl">
+          <summary>Presses as a table ({{ tl.presses.length }})</summary>
+          <table class="obj">
+            <thead><tr><th>time</th><th>room</th><th>who</th><th>value</th><th>actuator</th></tr></thead>
+            <tbody><tr v-for="(p, i) in tl.presses" :key="i">
+              <td>{{ p.ts.slice(11, 16) }}</td><td>{{ p.space }}</td><td>{{ p.user || 'anonymous' }}</td>
+              <td>{{ p.value == null ? 'off' : p.value + ' °C' }}</td><td><code>{{ p.actuator }}</code></td>
+            </tr></tbody>
+          </table>
+        </details>
+      </figure>
+    </div>
+
+    <!-- §5 live demo: graph snapshots through the day -->
+    <div class="demo" v-else-if="s.id === 'snapshots'">
+      <div class="controls">
+        <label>house<select v-model.number="b" @change="loadHouse"><option v-for="h in buildingList" :key="h.id" :value="h.id">{{ houseLabel(h) }}</option></select></label>
+        <label>day<select v-model.number="day" @change="loadHouse"><option v-for="d in dayList" :key="d" :value="d">{{ dayLabel(d) }}</option></select></label>
+        <button class="ghost" @click="togglePlay" :disabled="!gr || !gr.windows.length">{{ playing ? 'Pause' : 'Play' }}</button>
+        <label class="grow" v-if="gr && gr.windows.length">window {{ wi + 1 }} of {{ gr.windows.length }} · {{ labelledCount }} with labels
+          <input type="range" min="0" :max="gr.windows.length - 1" v-model.number="wi" aria-label="Time window">
+        </label>
+        <span class="mono" v-if="win">{{ windowLabel }}</span>
+      </div>
+      <figure>
+        <div class="figure-frame"><svg id="gr-svg" class="viz" role="img" aria-label="Heterogeneous graph snapshot of one house for one 15-minute window"></svg></div>
+        <p class="note" v-if="gr && !gr.windows.length">Nobody home this day: no snapshots.</p>
+        <div class="legend">
+          <span>▭ space</span><span>◇ sensor</span><span>■ device on · □ off</span><span>○ actuator</span>
+          <span style="color:var(--accent)">● present user</span><span style="color:var(--accent)">— located_in (input)</span>
+          <span style="color:var(--accent)">- - Head A label</span><span style="color:var(--accent)">▢ Head B label</span><span>- - adjacent spaces</span>
+        </div>
+        <figcaption><b>Figure 4.</b> The graph the GNN receives, one 15-minute window at a time, read back from
+          <code>build.py</code>'s <code>HeteroData</code>. Input: sensor readings and setpoints at the window start, and who is
+          present (<i>located_in</i>, with minutes since arrival). Presses inside the window are never input: they become
+          labels, Head A per named person and device, Head B per device. Press Play to watch a day.</figcaption>
+      </figure>
+    </div>
+
+    <div class="pending" v-else>{{ s.pending }}</div>
   </section>
 
   <footer>
@@ -254,6 +519,7 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
     <span>Draft — sections are filled as each phase is built.</span>
   </footer>
 </div>
+<div id="tip" class="tip" hidden></div>
 
 <script>
 const GH = "https://github.com/rafaeldpsilva/graph-phd/issues/";
@@ -364,6 +630,294 @@ const edges = [
   { id: "loop", d: "M1090,410 L1090,440 L120,440 L120,414", kind: "loop", label: "setpoint → HVAC · closed loop", lx: 605, ly: 432 },
 ];
 
+// ================================================================ §3 graph schema
+// Mirrors build.py (feature lists SPACE_FEATURES, SENSOR_FEATURES, ...). Planned types from the design spec §2.
+const BUILD = "build.py";
+const schemaNodes = [
+  { id: "user", title: "user", x: 40, y: 190, status: "done", lines: ["learned ID embedding", "present people only"],
+    where: `${BUILD} · data['user'].n_id → encode.py embedding`,
+    how: ["No input features: each node carries <code>n_id</code>, its row in a global user index across all buildings, and the encoder looks up a learned 32-d embedding.",
+          "Only people present at some moment of the window become nodes.",
+          "Planned: a profile (role) beside the embedding, and one shared “unknown” row for people the model has never seen."],
+    why: ["Long-term preference must outlive a 15-minute window; the embedding is the memory, shared by every snapshot of that person.",
+          "The index is global so that person 0 of house 3 and person 0 of house 7 never share a row (D19)."] },
+  { id: "space", title: "space", x: 470, y: 190, status: "done", lines: ["area · occupancy", "hour of day (sin, cos)"],
+    where: `${BUILD} · SPACE_FEATURES`,
+    how: ["Features: <code>area_m2</code>, <code>occupancy</code> (people present in the window), <code>hour_sin</code>, <code>hour_cos</code>.",
+          "Planned: floor, orientation, window ratio, weekday, outdoor temperature."],
+    why: ["The room is where people, sensors and devices meet: every path between a person and a device passes through it.",
+          "Hour as sine and cosine so that 23:45 and 00:00 are neighbours."] },
+  { id: "sensor", title: "sensor", x: 860, y: 30, status: "done", lines: ["reading · missing flag"],
+    where: `${BUILD} · SENSOR_FEATURES`,
+    how: ["Features: <code>reading</code> (last value at or before the window start) and <code>missing</code> (1 if none yet).",
+          "Planned: type one-hot for humidity, CO₂, lux and presence sensors."],
+    why: ["A missing reading is not a reading of zero; the flag lets the model tell them apart."] },
+  { id: "camera", title: "camera", x: 860, y: 150, status: "plan", lines: ["VLM fields", "real building only"],
+    where: "Design spec §2 · real deployment",
+    how: ["Structured fields from a vision-language model: people count, activity, clothing, posture, windows open."],
+    why: ["Its own node type, not a sensor: PyG needs one feature size per type, and camera features differ from a scalar reading."] },
+  { id: "device", title: "device", x: 860, y: 290, status: "done", lines: ["setpoint · on/off", "Head B label y"],
+    where: `${BUILD} · DEVICE_FEATURES · data['device'].y`,
+    how: ["Features: <code>setpoint</code> and <code>is_on</code>, from the last state change strictly before the window starts.",
+          "Label: <code>y</code> = the last press on that device inside the window, named or anonymous; <code>y_mask</code> marks devices that have one."],
+    why: ["A setpoint changed inside the window is the answer, so the input must stop before it.",
+          "Anonymous presses still say what the room settled on: Head B can learn from them even though Head A cannot."] },
+  { id: "actuator", title: "actuator", x: 860, y: 430, status: "done", lines: ["remote · HA · button"],
+    where: `${BUILD} · ACTUATOR_FEATURES`,
+    how: ["Features: one-hot over a fixed list <code>[remote, HA, button]</code>."],
+    why: ["The interface decides whether a press is attributable: Home Assistant knows who pressed, a shared remote does not.",
+          "A fixed list keeps the feature width constant across buildings."] },
+  { id: "activity", title: "activity", x: 300, y: 30, status: "plan", lines: ["an instance, not a category", "S2 (#7)"],
+    where: "Design spec §2 · simulator S2",
+    how: ["One node per ongoing activity instance (this dinner, this meeting), with type and duration so far."],
+    why: ["Separate instances do not blur together in message passing, and the shared instance groups the people taking part for Head B."] },
+];
+const schemaEdges = [
+  { id: "located_in", title: "user → located_in → space", status: "done", d: "M240,232 L466,232", label: "located_in", lx: 353, ly: 224,
+    where: `${BUILD} · per window · edge_attr = LOCATED_IN_FEATURES`,
+    how: ["One edge per person and room they are in during the window.",
+          "Edge feature: <code>min_since_arrival</code>. Planned: presence <code>confidence</code> (noisy sensing, S3) and clothing."],
+    why: ["The only link between a person and the building: everything a person hears arrives through it.",
+          "Time since arrival matters: someone just in from a cold walk feels differently (B12)."] },
+  { id: "adjacent_to", title: "space → adjacent_to → space", status: "done", d: "M520,274 C520,345 620,345 620,278", label: "adjacent_to", lx: 570, ly: 362,
+    where: `${BUILD} · static`,
+    how: ["Static edges between rooms. For now every room is adjacent to the living room; real floor plans come later."],
+    why: ["Heat and people move between neighbouring rooms (E2), so a room's state is informative for the next one."] },
+  { id: "sensor_in", title: "sensor → in → space", status: "done", d: "M856,72 L760,72 L760,205 L674,205", label: "in", lx: 808, ly: 64,
+    where: `${BUILD} · static`, how: ["Static: each sensor belongs to one room."],
+    why: ["Brings the measured temperature to the room, and from there to the people in it."] },
+  { id: "camera_in", title: "camera → in → space", status: "plan", kind: "dashed", d: "M856,192 L780,192 L780,225 L674,225", label: "in", lx: 818, ly: 184,
+    where: "Design spec §2", how: ["Static, like a sensor."], why: ["Same path as a sensor, different features."] },
+  { id: "installed_in", title: "device → installed_in → space", status: "done", d: "M856,332 L800,332 L800,250 L674,250", label: "installed_in", lx: 792, ly: 300, anchor: "end",
+    where: `${BUILD} · static`, how: ["Static: each HVAC unit serves one room."],
+    why: ["Ties the thing being controlled to the people who feel it."] },
+  { id: "acts_on", title: "actuator → acts_on → device", status: "done", d: "M960,430 L960,378", label: "acts_on", lx: 968, ly: 410, anchor: "start",
+    where: `${BUILD} · static`, how: ["Static: each interface (remote, HA) controls one device."],
+    why: ["Lets the device know which kinds of interface reach it, and so how often its presses are attributable."] },
+  { id: "executes", title: "user → executes → activity", status: "plan", kind: "dashed", d: "M140,190 L140,72 L296,72", label: "executes", lx: 148, ly: 130, anchor: "start",
+    where: "Design spec §2 · S2", how: ["Per window, with the person's role (host, guest; presenter, attendee)."],
+    why: ["What a person is doing shifts their comfort (metabolic rate)."] },
+  { id: "performed_in", title: "activity → performed_in → space", status: "plan", kind: "dashed", d: "M400,114 L400,150 L540,150 L540,186", label: "performed_in", lx: 408, ly: 142, anchor: "start",
+    where: "Design spec §2 · S2", how: ["Per window: where the activity takes place."], why: ["Puts the activity's effect into the room it happens in."] },
+  { id: "prefers", title: "user → prefers → device", status: "done", kind: "label", d: "M140,274 L140,410 L820,410 L820,350 L856,350", label: "prefers · label only, never input", lx: 480, ly: 430,
+    where: `${BUILD} · edge_label_index, edge_label · no edge_index`,
+    how: ["Built from named presses inside the window: the last value per (person, device).",
+          "Stored as <code>edge_label_index</code> and <code>edge_label</code> only. Without an <code>edge_index</code>, <code>ToUndirected</code> skips it and no message ever flows along it."],
+    why: ["It is Head A's target. If it were an input edge the model would read the answer instead of learning it.",
+          "Only named presses count, because only they say whose preference it is."] },
+];
+
+// ================================================================ live demos (#30)
+// Data: live mode asks server.py; static mode (GitHub Pages) reads the files
+// `python server.py --export` wrote: timeline?b=0&day=1 -> data/timeline_b0_day1.json (D33).
+const api = {
+  live: false,
+  async get(route, q = {}) {
+    const url = this.live ? `/api/${route}?${new URLSearchParams(q)}`
+      : `data/${[route, ...Object.entries(q).filter(([k]) => k !== "db").map(([k, v]) => k + v)].join("_")}.json`;
+    const r = await fetch(url);
+    const body = await r.json().catch(() => ({ error: `${r.status}: ${url}` }));
+    if (!r.ok) throw new Error(body.error || `${r.status}: ${url}`);
+    return body;
+  },
+};
+
+// Colour follows the room, never its rank (living and studio never coexist: one slot).
+// Bathroom has no AC: neutral grey, so colour is spent only on rooms a person can control.
+const ROOM_SLOT = { living: 1, studio: 1, kitchen: 2, bedroom1: 3, bedroom2: 4, bedroom3: 5 };
+const roomColor = r => r in ROOM_SLOT ? `var(--r${ROOM_SLOT[r]})` : "var(--plan)";
+const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+const clock = d3.timeFormat("%H:%M");
+const fmtC = v => v == null ? "–" : `${v.toFixed(1)}°`;
+const motion = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const tip = {
+  show(ev, html) {
+    const el = document.getElementById("tip");
+    el.innerHTML = html; el.hidden = false;
+    el.style.left = Math.min(ev.clientX + 14, innerWidth - 310) + "px";
+    el.style.top = (ev.clientY + 14) + "px";
+  },
+  hide() { document.getElementById("tip").hidden = true; },
+};
+
+// ---- Figure 2: one house, one day. Temperatures on top, presence lanes below, one time axis.
+function drawTimeline(el, T) {
+  const W = 1060, L = 104, R = 100, top = 12, H1 = 240, lane = 24;
+  const lanesTop = top + H1 + 46, bottom = lanesTop + T.people.length * lane;
+  const svg = d3.select(el).attr("viewBox", `0 0 ${W} ${bottom + 28}`);
+  svg.selectAll("*").remove();
+
+  const x = d3.scaleTime([new Date(T.from), new Date(T.to)], [L, W - R]);
+  const series = Object.entries(T.temps).map(([room, pts]) => ({ room, pts: pts.map(([t, v]) => [new Date(t), v]) }));
+  // setpoint as segments: value i holds until change i+1; null (off) draws nothing
+  const sp = Object.entries(T.setpoints).flatMap(([room, pts]) => pts.map(([t, v], i) =>
+    ({ room, v, a: new Date(t), b: new Date(i + 1 < pts.length ? pts[i + 1][0] : T.to) }))).filter(s => s.v != null);
+  const y = d3.scaleLinear(d3.extent([...series.flatMap(s => s.pts.map(p => p[1])), ...sp.map(s => s.v),
+    ...T.people.map(p => p.mu)]), [top + H1, top]).nice();
+  const xAxis = g => g.call(d3.axisBottom(x).ticks(d3.timeHour.every(3)).tickFormat(clock).tickSizeOuter(0));
+
+  svg.append("g").attr("class", "grid").selectAll("line").data(y.ticks(6)).join("line")
+    .attr("x1", L).attr("x2", W - R).attr("y1", y).attr("y2", y);
+  svg.append("g").attr("class", "axis").attr("transform", `translate(${L},0)`)
+    .call(d3.axisLeft(y).ticks(6).tickFormat(v => `${v} °C`).tickSize(0).tickPadding(8))
+    .call(g => g.select(".domain").remove());
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${top + H1})`).call(xAxis);
+
+  const mu = svg.append("g").attr("class", "mu");  // hidden truth: shown to explain, never input (I8)
+  mu.selectAll("line").data(T.people).join("line").attr("x1", L).attr("x2", W - R)
+    .attr("y1", p => y(p.mu)).attr("y2", p => y(p.mu));
+  mu.selectAll("text").data(T.people).join("text").attr("x", L + 6).attr("y", p => y(p.mu) - 4).text(p => `μ* ${p.user}`);
+
+  svg.append("g").selectAll("line").data(sp).join("line").attr("class", "setpoint").style("stroke", s => roomColor(s.room))
+    .attr("x1", s => x(s.a)).attr("x2", s => x(s.b)).attr("y1", s => y(s.v)).attr("y2", s => y(s.v));
+  const line = d3.line().x(p => x(p[0])).y(p => y(p[1]));
+  svg.append("g").selectAll("path").data(series).join("path").attr("class", "temp")
+    .style("stroke", s => roomColor(s.room)).attr("d", s => line(s.pts));
+
+  // direct labels at the line ends, pushed apart so they never overlap
+  const ends = series.map(s => ({ room: s.room, y: y(s.pts.at(-1)[1]) })).sort((a, b) => a.y - b.y);
+  ends.forEach((e, i) => { if (i && e.y - ends[i - 1].y < 14) e.y = ends[i - 1].y + 14; });
+  const lab = svg.append("g").selectAll("g").data(ends).join("g").attr("transform", e => `translate(${W - R + 8},${e.y})`);
+  lab.append("line").attr("class", "swatch").attr("x2", 12).style("stroke", e => roomColor(e.room));
+  lab.append("text").attr("class", "ink").attr("x", 18).attr("dy", "0.32em").text(e => e.room);
+
+  // presence lanes (drawn before the hover layer; the hover layer reports who is where)
+  svg.append("text").attr("class", "lane-head").attr("x", L - 8).attr("y", lanesTop - 8).attr("text-anchor", "end").text("presence");
+  svg.append("g").selectAll("text").data(T.people).join("text").attr("class", "lane-label")
+    .attr("x", L - 8).attr("y", (p, i) => lanesTop + i * lane + lane / 2).attr("dy", "0.32em").attr("text-anchor", "end").text(p => p.user);
+  const lanes = Object.fromEntries(T.people.map((p, i) => [p.user, i]));
+  svg.append("g").selectAll("rect").data(T.stays).join("rect").attr("class", "stay").attr("rx", 2)
+    .attr("x", s => x(new Date(s.from))).attr("width", s => Math.max(1, x(new Date(s.to)) - x(new Date(s.from))))
+    .attr("y", s => lanesTop + lanes[s.user] * lane + 3).attr("height", lane - 6).style("fill", s => roomColor(s.space));
+  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${bottom + 2})`).call(xAxis);
+
+  // hover: crosshair over both panels, temperature per room + who is where
+  const nearest = d3.bisector(p => p[0]).center;
+  const cross = svg.append("line").attr("class", "cross").attr("y1", top).attr("y2", bottom).style("display", "none");
+  svg.append("rect").attr("class", "hit").attr("x", L).attr("y", top).attr("width", W - R - L).attr("height", bottom - top)
+    .on("mousemove", ev => {
+      const t = x.invert(d3.pointer(ev)[0]);
+      cross.style("display", null).attr("x1", x(t)).attr("x2", x(t));
+      const rows = series.map(s => `<i class="sw" style="background:${roomColor(s.room)}"></i>${s.room} <b class="mono">${fmtC(s.pts[nearest(s.pts, t)][1])}</b>`);
+      const here = T.stays.filter(s => new Date(s.from) <= t && t < new Date(s.to)).map(s => `${s.user} in ${s.space}`);
+      tip.show(ev, `<b>${clock(t)}</b><br>${rows.join("<br>")}<br><i>${here.join(", ") || "nobody home"}</i>`);
+    })
+    .on("mouseleave", () => { cross.style("display", "none"); tip.hide(); });
+
+  // presses on top: named = filled, anonymous = hollow, off = ×, placed at the room temperature
+  const byRoom = Object.fromEntries(series.map(s => [s.room, s.pts]));
+  const P = T.presses.map(p => {
+    const t = new Date(p.ts), pts = byRoom[p.space];
+    return { ...p, t, yv: p.value ?? pts[nearest(pts, t)][1] };
+  });
+  const m = svg.append("g").selectAll("g").data(P).join("g")
+    .attr("class", p => `press${p.user ? " named" : ""}`).style("color", p => roomColor(p.space))
+    .attr("transform", p => `translate(${x(p.t)},${y(p.yv)})`)
+    .on("mouseenter", (ev, p) => tip.show(ev, `<b>${clock(p.t)}</b> · ${p.space}<br>`
+      + (p.value == null ? "turned off" : `set <b class="mono">${p.value} °C</b>`)
+      + `<br>${p.user ? `by ${p.user} (named)` : "anonymous"} · <span class="mono">${p.actuator}</span>`))
+    .on("mouseleave", () => tip.hide());
+  m.append("circle").attr("class", "hitpad").attr("r", 12);
+  m.filter(p => p.value != null).append("circle").attr("class", "dot-m").attr("r", 4.5);
+  m.filter(p => p.value == null).append("path").attr("d", "M-4,-4L4,4M-4,4L4,-4");
+}
+
+// ---- Figure 3: graph snapshots. Fixed layout per house so only the dynamic parts move.
+function drawGraph(el, st) {
+  const W = 1060, SY = 210, DY = 310, AY = 392, UY = 60;
+  const spaces = Object.keys(st.spaces);
+  const sx = Object.fromEntries(spaces.map((s, i) => [s, 60 + (i + 0.5) * (W - 120) / spaces.length]));
+  const pos = {};
+  for (const [k, s] of Object.entries(st.sensors)) pos[k] = [sx[s] - 30, DY];
+  for (const [k, s] of Object.entries(st.devices)) pos[k] = [sx[s] + 30, DY];
+  for (const [dev, list] of d3.group(Object.entries(st.actuators), ([, a]) => a.device))
+    list.forEach(([k], i) => pos[k] = [pos[dev][0] + (i - (list.length - 1) / 2) * 36, AY]);
+
+  const svg = d3.select(el).attr("viewBox", `0 0 ${W} 430`);
+  svg.selectAll("*").remove();
+  const E = svg.append("g");
+  E.selectAll(".adj").data(st.adjacency).join("path").attr("class", "adj").attr("d", ([a, b]) => {
+    const x1 = sx[a], x2 = sx[b], cy = Math.max(SY - 92, SY - 36 - Math.abs(x2 - x1) * 0.12);
+    return `M${x1},${SY - 22}Q${(x1 + x2) / 2},${cy} ${x2},${SY - 22}`;
+  });
+  const link = (data, x1, y1, x2, y2) => E.append("g").selectAll("line").data(data).join("line").attr("class", "e")
+    .attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
+  link(Object.entries(st.sensors), ([k]) => pos[k][0], DY - 9, ([, s]) => sx[s] - 18, SY + 22);
+  link(Object.entries(st.devices), ([k]) => pos[k][0], DY - 9, ([, s]) => sx[s] + 18, SY + 22);
+  link(Object.entries(st.actuators), ([k]) => pos[k][0], AY - 6, ([, a]) => pos[a.device][0], DY + 9);
+
+  const node = (data, cls) => svg.append("g").selectAll("g").data(data).join("g").attr("class", cls)
+    .attr("transform", d => `translate(${(pos[d[0]] || [sx[d[0]], SY]).join(",")})`);
+  const sp = node(spaces.map(s => [s]), "space");
+  sp.append("rect").attr("x", -52).attr("y", -22).attr("width", 104).attr("height", 44).attr("rx", 3);
+  sp.append("text").attr("class", "nm").attr("y", -3).attr("text-anchor", "middle").text(([s]) => s);
+  sp.append("text").attr("class", "val occ").attr("y", 13).attr("text-anchor", "middle");
+  const se = node(Object.entries(st.sensors), "sensor");
+  se.append("path").attr("d", "M0,-8L8,0L0,8L-8,0Z");
+  se.append("text").attr("class", "val").attr("y", 24).attr("text-anchor", "middle");
+  const dv = node(Object.entries(st.devices), "device");
+  dv.append("rect").attr("class", "ring").attr("x", -12).attr("y", -12).attr("width", 24).attr("height", 24).attr("rx", 2);
+  dv.append("rect").attr("class", "box").attr("x", -8).attr("y", -8).attr("width", 16).attr("height", 16);
+  dv.append("text").attr("class", "val").attr("y", 26).attr("text-anchor", "middle");
+  dv.append("text").attr("class", "yb").attr("y", 40).attr("text-anchor", "middle");
+  const ac = node(Object.entries(st.actuators), "actuator");
+  ac.append("circle").attr("r", 5);
+  ac.append("text").attr("class", "small").attr("y", 19).attr("text-anchor", "middle").text(([, a]) => a.type);
+
+  svg.append("g").attr("class", "g-label");
+  svg.append("g").attr("class", "g-loc");
+  svg.append("g").attr("class", "g-users");
+  el.__layout = { sx, pos, SY, DY, UY };
+}
+
+function updateGraph(el, w, animate) {
+  const { sx, pos, SY, DY, UY } = el.__layout, svg = d3.select(el);
+  const dur = animate && motion() ? 350 : 0;
+  const bySpace = d3.group(w.users, u => u.space);
+  const U = w.users.map(u => {
+    const list = bySpace.get(u.space);
+    return { ...u, x: sx[u.space] + (list.indexOf(u) - (list.length - 1) / 2) * 34 };
+  });
+  const ux = Object.fromEntries(U.map(u => [u.user, u.x]));
+
+  svg.selectAll(".space .occ").text(([s]) => `occupancy ${bySpace.get(s)?.length || 0}`);
+  svg.selectAll(".sensor .val").text(([k]) => fmtC(w.readings[k]));
+  svg.selectAll(".device").classed("on", ([k]) => w.setpoints[k] != null).classed("lab", ([k]) => k in w.label_b);
+  svg.selectAll(".device .val").text(([k]) => w.setpoints[k] == null ? "off" : fmtC(w.setpoints[k]));
+  svg.selectAll(".device .yb").text(([k]) => k in w.label_b ? `B ${w.label_b[k]}` : "");
+
+  const fade = s => s.transition().duration(dur).attr("opacity", 0).remove();
+  const loc = svg.select(".g-loc").selectAll("g").data(U, u => u.user)
+    .join(e => { const g = e.append("g").attr("opacity", 0); g.append("line"); g.append("text").attr("class", "small"); return g; },
+      u => u, fade);
+  loc.transition().duration(dur).attr("opacity", 1);
+  loc.select("line").transition().duration(dur)
+    .attr("x1", u => u.x).attr("y1", UY + 13).attr("x2", u => sx[u.space]).attr("y2", SY - 22);
+  loc.select("text").text(u => `${Math.round(u.min_since_arrival)}m`).transition().duration(dur)
+    .attr("x", u => u.x + 4).attr("y", UY + 32);  // beside its own user: shared rooms don't overlap
+
+  const us = svg.select(".g-users").selectAll("g").data(U, u => u.user)
+    .join(e => {
+      const g = e.append("g").attr("class", "user").attr("opacity", 0).attr("transform", u => `translate(${u.x},${UY})`);
+      g.append("circle").attr("r", 13);
+      g.append("text").attr("y", -19).attr("text-anchor", "middle").text(u => u.user);
+      return g;
+    }, u => u, fade);
+  us.transition().duration(dur).attr("opacity", 1).attr("transform", u => `translate(${u.x},${UY})`);
+
+  // labels: what the model must predict for this window (never input)
+  const A = w.label_a.filter(([u]) => u in ux);
+  const la = svg.select(".g-label").selectAll("g").data(A).join(e => {
+    const g = e.append("g"); g.append("path").attr("class", "lab-a"); g.append("text").attr("class", "lab-a-t"); return g;
+  });
+  la.select("path").attr("d", ([u, d]) => {
+    const [x1, x2] = [ux[u], pos[d][0]];
+    return `M${x1},${UY + 13}C${x1},${SY + 40} ${x2 + 40},${DY - 70} ${x2 + 10},${DY - 12}`;
+  });
+  la.select("text").attr("x", ([, d]) => pos[d][0] + 16).attr("y", DY - 22).text(([, , v]) => `A ${v}`);
+}
+
 createAppSafely();
 function createAppSafely() {
   const { createApp } = Vue;
@@ -371,6 +925,13 @@ function createAppSafely() {
     data() {
       return {
         nodes, edges, sel: "sim", dark: false,
+        schemaNodes, schemaEdges, schemaSel: "located_in",
+        // live demos (#30)
+        live: false, demoError: "", running: false,
+        knobDefaults: null, knobEdits: null, caps: { houses: 10, days: 14 },
+        runArgs: { houses: 5, days: 7, seed: 0 },
+        dbName: "ui", meta: null, buildingList: [], b: 0, day: 0,
+        tl: null, gr: null, wi: 0, playing: null,
         today: new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long" }),
         statusText: { done: "built", wip: "in progress", plan: "planned" },
         columns: [{ t: "sources", x: 120 }, { t: "common log", x: 366 }, { t: "graph", x: 612 }, { t: "model", x: 855 }, { t: "use", x: 1090 }],
@@ -419,8 +980,101 @@ function createAppSafely() {
     },
     computed: {
       selected() { return this.nodes.find(n => n.id === this.sel); },
+      schemaSelected() { return [...this.schemaNodes, ...this.schemaEdges].find(n => n.id === this.schemaSel); },
+      changedKnobs() {
+        if (!this.knobEdits) return {};
+        return Object.fromEntries(Object.entries(this.knobEdits)
+          .filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(this.knobDefaults[k])));
+      },
+      metaOverrides() {  // knobs that produced the loaded db and differ from knobs.py now
+        const k = this.meta?.knobs;
+        if (!k || !this.knobDefaults) return "";
+        return Object.entries(k).filter(([n, v]) => n in this.knobDefaults && n !== "n_houses" && n !== "n_days"
+          && JSON.stringify(v) !== JSON.stringify(this.knobDefaults[n])).map(([n, v]) => `${n}=${JSON.stringify(v)}`).join(", ");
+      },
+      dayList() { return Array.from({ length: this.meta?.days_available || 0 }, (_, i) => i); },
+      win() { return this.gr?.windows[this.wi]; },
+      windowLabel() { return this.win ? `${hhmm(this.win.t0 % 1440)}–${hhmm((this.win.t0 + 15) % 1440)}` : ""; },
+      labelledCount() {
+        return this.gr ? this.gr.windows.filter(w => w.label_a.length || Object.keys(w.label_b).length).length : 0;
+      },
+    },
+    watch: {
+      wi() { if (this.win) updateGraph(document.getElementById("gr-svg"), this.win, true); },
     },
     methods: {
+      roomColor,
+      houseLabel(h) { return `h${h.id} · ${h.typology} · ${h.household.replace("_", " ")} · ${h.people}p${h.has_HA ? " · HA" : ""}`; },
+      dayLabel(d) {
+        const start = new Date(this.meta?.knobs?.start || this.knobDefaults?.start || "2026-01-05");
+        return `day ${d} · ${new Date(start.getTime() + d * 864e5).toLocaleDateString("en-GB", { weekday: "short" })}`;
+      },
+      async initDemos() {
+        try {  // live if server.py answers, else the static export
+          const r = await fetch("/api/knobs");
+          api.live = this.live = r.ok && (r.headers.get("content-type") || "").includes("json");
+        } catch (e) { api.live = this.live = false; }
+        try {
+          const k = await api.get("knobs");
+          const { n_houses, n_days, start, ...rest } = k.knobs;  // size is a run argument; calendar is fixed
+          this.knobDefaults = { ...k.knobs };
+          this.knobEdits = structuredClone(rest);
+          this.caps = k.caps;
+          await this.loadDb();
+        } catch (e) {
+          this.demoError = this.live ? `Demo data unavailable: ${e.message}`
+            : "Demos need data: run python server.py and open http://127.0.0.1:8000 (or deploy the static export).";
+        }
+      },
+      async loadDb() {
+        try {
+          const q = { db: this.dbName };
+          [this.meta, this.buildingList] = await Promise.all([api.get("meta", q), api.get("buildings", q)]);
+          if (!this.buildingList.some(h => h.id === this.b)) this.b = this.buildingList[0]?.id ?? 0;
+          this.day = Math.min(this.day, this.meta.days_available - 1);
+          await this.loadHouse();
+        } catch (e) { this.demoError = e.message; this.meta = null; this.tl = this.gr = null; }
+      },
+      async loadHouse() {
+        if (this.playing) this.togglePlay();
+        this.demoError = "";
+        const q = { db: this.dbName, b: this.b, day: this.day };
+        try {
+          const [tl, gr] = await Promise.all([api.get("timeline", q), api.get("graph", q)]);
+          this.tl = Vue.markRaw(tl); this.gr = Vue.markRaw(gr);  // big read-only data: no reactive proxies
+        } catch (e) { this.demoError = e.message; return; }
+        const first = this.gr.windows.findIndex(w => w.label_a.length || Object.keys(w.label_b).length);
+        await this.$nextTick();
+        drawTimeline(document.getElementById("tl-svg"), this.tl);
+        const g = document.getElementById("gr-svg");
+        drawGraph(g, this.gr.static);
+        if (this.wi === Math.max(first, 0) && this.win) updateGraph(g, this.win, false);  // watcher won't fire
+        this.wi = Math.max(first, 0);
+      },
+      async run() {
+        this.running = true; this.demoError = "";
+        try {
+          const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...this.runArgs, knobs: this.changedKnobs }) });
+          const body = await r.json();
+          if (!r.ok) throw new Error(body.error);
+          this.dbName = "ui";
+          await this.loadDb();
+        } catch (e) { this.demoError = `Run failed: ${e.message}`; }
+        finally { this.running = false; }
+      },
+      resetKnobs() {
+        const { n_houses, n_days, start, ...rest } = this.knobDefaults;
+        this.knobEdits = structuredClone(rest);
+      },
+      togglePlay() {
+        if (this.playing) { clearInterval(this.playing); this.playing = null; return; }
+        if (this.wi >= this.gr.windows.length - 1) this.wi = 0;
+        this.playing = setInterval(() => {
+          if (this.wi >= this.gr.windows.length - 1) return this.togglePlay();
+          this.wi++;
+        }, 450);
+      },
       toggleTheme() {
         this.dark = !this.dark;
         document.documentElement.dataset.theme = this.dark ? "dark" : "light";
@@ -432,6 +1086,7 @@ function createAppSafely() {
       try { saved = localStorage.getItem("theme"); } catch (e) {}
       if (saved) document.documentElement.dataset.theme = saved;
       this.dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      this.initDemos();
     },
   }).mount("#app");
 }
