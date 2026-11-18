@@ -1,1230 +1,2415 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Preference Graph Poster</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
-<style>
-:root {
-  --paper: #f6f3ec; --card: #fffdf8; --ink: #1d1b17; --muted: #6a645a; --rule: #d8d1c3;
-  --accent: #8a2b1f; --done: #2f6a3e; --wip: #9a6a12; --plan: #8a8478;
-  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #14130f; --card: #1c1a15; --ink: #ebe5d8; --muted: #a49d8f; --rule: #39352c;
-    --accent: #d98572; --done: #8cc39a; --wip: #e2b55e; --plan: #8f897c; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #14130f; --card: #1c1a15; --ink: #ebe5d8; --muted: #a49d8f; --rule: #39352c;
-  --accent: #d98572; --done: #8cc39a; --wip: #e2b55e; --plan: #8f897c; color-scheme: dark;
-}
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-  margin: 0; background: var(--paper); color: var(--ink);
-  font-family: var(--serif); font-size: 18px; line-height: 1.6;
-  font-optical-sizing: auto; -webkit-font-smoothing: antialiased;
-}
-.page { max-width: 1120px; margin: 0 auto; padding: 0 16px 96px; }
-a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-code, .mono { font-family: var(--mono); font-size: 0.82em; }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Preference Graph Poster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <style>
+    :root {
+      --paper: #f6f3ec;
+      --card: #fffdf8;
+      --ink: #1d1b17;
+      --muted: #6a645a;
+      --rule: #d8d1c3;
+      --accent: #8a2b1f;
+      --done: #2f6a3e;
+      --wip: #9a6a12;
+      --plan: #8a8478;
+      --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      color-scheme: light;
+    }
 
-/* ---- masthead */
-header.mast { padding: 56px 0 28px; border-bottom: 1px solid var(--ink); }
-.kicker { font-variant: small-caps; letter-spacing: 0.08em; color: var(--accent); font-size: 15px; }
-h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.12; font-weight: 600; margin: 10px 0 14px; letter-spacing: -0.01em; }
-.byline { color: var(--muted); font-style: italic; }
-.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
-.toolbar button, .theme {
-  font: inherit; font-size: 14px; background: none; color: var(--ink); border: 1px solid var(--rule);
-  padding: 4px 12px; border-radius: 2px; cursor: pointer;
-}
-.toolbar button:hover, .theme:hover { border-color: var(--ink); }
-.theme { position: fixed; top: 12px; right: 16px; z-index: 10; background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
-.abstract { max-width: 760px; margin: 28px 0 0; font-size: 19px; }
-.abstract::first-letter { font-size: 3.1em; float: left; line-height: 0.9; padding: 6px 8px 0 0; font-weight: 600; color: var(--accent); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --paper: #14130f;
+        --card: #1c1a15;
+        --ink: #ebe5d8;
+        --muted: #a49d8f;
+        --rule: #39352c;
+        --accent: #d98572;
+        --done: #8cc39a;
+        --wip: #e2b55e;
+        --plan: #8f897c;
+        color-scheme: dark;
+      }
+    }
 
-/* ---- contents */
-nav.toc { margin: 32px 0 8px; display: flex; flex-direction: column; max-width: 520px; gap: 2px; font-size: 15px; }
-nav.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule); padding: 3px 0; display: flex; gap: 10px; }
-nav.toc a:hover { color: var(--accent); }
-nav.toc .n { font-family: var(--mono); color: var(--muted); font-size: 13px; padding-top: 2px; }
+    :root[data-theme="dark"] {
+      --paper: #14130f;
+      --card: #1c1a15;
+      --ink: #ebe5d8;
+      --muted: #a49d8f;
+      --rule: #39352c;
+      --accent: #d98572;
+      --done: #8cc39a;
+      --wip: #e2b55e;
+      --plan: #8f897c;
+      color-scheme: dark;
+    }
 
-/* ---- sections */
-section { padding: 56px 0 8px; border-top: 1px solid var(--rule); margin-top: 40px; }
-header + section { border-top: none; margin-top: 0; }
-h2 { font-size: 30px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.005em; }
-h2 .n { font-family: var(--mono); font-size: 15px; color: var(--accent); font-weight: 400; display: block; letter-spacing: 0.04em; }
-.lede { color: var(--muted); font-style: italic; max-width: 760px; margin: 0 0 24px; }
-.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
-h3 { font-variant: small-caps; letter-spacing: 0.06em; font-size: 16px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
-p { margin: 0 0 14px; }
+    * {
+      box-sizing: border-box;
+    }
 
-table.obj { width: 100%; border-collapse: collapse; font-size: 16px; margin: 8px 0 0; }
-table.obj th, table.obj td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
-table.obj th { font-variant: small-caps; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--ink); }
-table.obj td:first-child { font-variant: small-caps; letter-spacing: 0.04em; color: var(--accent); white-space: nowrap; }
+    html {
+      scroll-behavior: smooth;
+    }
 
-/* ---- figures */
-figure { margin: 8px 0 0; }
-.figure-frame { background: var(--card); border: 1px solid var(--rule); padding: 12px; overflow-x: auto; }
-.figure-frame svg { display: block; width: 100%; min-width: 880px; height: auto; }
-figcaption { font-size: 15px; color: var(--muted); margin-top: 10px; max-width: 900px; }
-figcaption b { color: var(--ink); font-weight: 600; }
-.pending {
-  border: 1px dashed var(--rule); background: var(--card); padding: 28px 22px; color: var(--muted);
-  font-style: italic; text-align: center; font-size: 16px;
-}
-.pending .mono { font-style: normal; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.6;
+      font-optical-sizing: auto;
+      -webkit-font-smoothing: antialiased;
+    }
 
-/* ---- architecture diagram */
-.col-head { font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.1em; font-size: 14px; fill: var(--muted); }
-.node rect { fill: var(--card); stroke: var(--ink); stroke-width: 1; transition: stroke-width .15s, fill .15s; }
-.node.dashed rect { stroke-dasharray: 5 4; stroke: var(--muted); }
-.node { cursor: pointer; outline: none; }
-.node:hover rect, .node:focus-visible rect { stroke-width: 2; }
-.node.sel rect { stroke: var(--accent); stroke-width: 2.2; }
-.node .title { font-family: var(--serif); font-weight: 600; font-size: 18px; fill: var(--ink); }
-.node .line { font-family: var(--serif); font-size: 13.5px; fill: var(--muted); }
-.node .status { font-family: var(--mono); font-size: 10.5px; }
-.st-done { fill: var(--done); } .st-wip { fill: var(--wip); } .st-plan { fill: var(--plan); }
-.edge { fill: none; stroke: var(--muted); stroke-width: 1.3; }
-.edge.dashed { stroke-dasharray: 5 4; }
-.edge.loop { stroke: var(--accent); stroke-width: 1.5; }
-.edge-label { font-family: var(--serif); font-style: italic; font-size: 13px; fill: var(--muted); }
-.edge-label.loop { fill: var(--accent); }
-.arrow { fill: var(--muted); } .arrow-loop { fill: var(--accent); }
-.ext rect { fill: none; stroke: var(--rule); stroke-dasharray: 2 3; }
-.ext .title { font-family: var(--serif); font-size: 15px; font-weight: 600; fill: var(--ink); }
-.ext .line { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
-.band-label { font-family: var(--serif); font-style: italic; font-size: 14px; fill: var(--muted); }
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 16px 96px;
+    }
 
-.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--muted); margin-top: 10px; }
-.legend span { display: inline-flex; align-items: center; gap: 7px; }
-.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    a {
+      color: var(--accent);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
 
-/* ---- detail panel */
-.detail { margin-top: 0; scroll-margin-top: 56px; border-top: 2px solid var(--accent); background: var(--card); padding: 22px 24px 18px; }
-.detail h4 { margin: 0 0 4px; font-size: 24px; font-weight: 600; }
-.detail .meta { font-size: 14px; color: var(--muted); margin-bottom: 16px; display: flex; gap: 16px; flex-wrap: wrap; }
-.detail .meta b { font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: 0.04em; }
-.detail ul { margin: 0; padding-left: 18px; }
-.detail li { margin: 0 0 6px; }
-.refs { margin-top: 14px; font-size: 14px; color: var(--muted); }
-.refs a { margin-right: 14px; }
+    code,
+    .mono {
+      font-family: var(--mono);
+      font-size: 0.82em;
+    }
 
-/* ---- live demos (#30). Room colours: categorical slots 1-5 for rooms with AC, bathroom grey.
+    /* ---- masthead */
+    header.mast {
+      padding: 56px 0 28px;
+      border-bottom: 1px solid var(--ink);
+    }
+
+    .kicker {
+      font-variant: small-caps;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-size: 15px;
+    }
+
+    h1 {
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1.12;
+      font-weight: 600;
+      margin: 10px 0 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .byline {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .toolbar button,
+    .theme {
+      font: inherit;
+      font-size: 14px;
+      background: none;
+      color: var(--ink);
+      border: 1px solid var(--rule);
+      padding: 4px 12px;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover,
+    .theme:hover {
+      border-color: var(--ink);
+    }
+
+    .theme {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      z-index: 10;
+      background: var(--card);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+    }
+
+    .abstract {
+      max-width: 760px;
+      margin: 28px 0 0;
+      font-size: 19px;
+    }
+
+    .abstract::first-letter {
+      font-size: 3.1em;
+      float: left;
+      line-height: 0.9;
+      padding: 6px 8px 0 0;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* ---- contents */
+    nav.toc {
+      margin: 32px 0 8px;
+      display: flex;
+      flex-direction: column;
+      max-width: 520px;
+      gap: 2px;
+      font-size: 15px;
+    }
+
+    nav.toc a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--rule);
+      padding: 3px 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    nav.toc a:hover {
+      color: var(--accent);
+    }
+
+    nav.toc .n {
+      font-family: var(--mono);
+      color: var(--muted);
+      font-size: 13px;
+      padding-top: 2px;
+    }
+
+    /* ---- sections */
+    section {
+      padding: 56px 0 8px;
+      border-top: 1px solid var(--rule);
+      margin-top: 40px;
+    }
+
+    header+section {
+      border-top: none;
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: 30px;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.005em;
+    }
+
+    h2 .n {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--accent);
+      font-weight: 400;
+      display: block;
+      letter-spacing: 0.04em;
+    }
+
+    .lede {
+      color: var(--muted);
+      font-style: italic;
+      max-width: 760px;
+      margin: 0 0 24px;
+    }
+
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    @media (max-width: 760px) {
+      .cols {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    h3 {
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    table.obj {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+      margin: 8px 0 0;
+    }
+
+    table.obj th,
+    table.obj td {
+      text-align: left;
+      padding: 8px 10px 8px 0;
+      border-bottom: 1px solid var(--rule);
+      vertical-align: top;
+    }
+
+    table.obj th {
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--ink);
+    }
+
+    table.obj td:first-child {
+      font-variant: small-caps;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* ---- figures */
+    figure {
+      margin: 8px 0 0;
+    }
+
+    .figure-frame {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      padding: 12px;
+      overflow-x: auto;
+    }
+
+    .figure-frame svg {
+      display: block;
+      width: 100%;
+      min-width: 880px;
+      height: auto;
+    }
+
+    figcaption {
+      font-size: 15px;
+      color: var(--muted);
+      margin-top: 10px;
+      max-width: 900px;
+    }
+
+    figcaption b {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .pending {
+      border: 1px dashed var(--rule);
+      background: var(--card);
+      padding: 28px 22px;
+      color: var(--muted);
+      font-style: italic;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .pending .mono {
+      font-style: normal;
+    }
+
+    /* ---- architecture diagram */
+    .col-head {
+      font-family: var(--serif);
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 14px;
+      fill: var(--muted);
+    }
+
+    .node rect {
+      fill: var(--card);
+      stroke: var(--ink);
+      stroke-width: 1;
+      transition: stroke-width .15s, fill .15s;
+    }
+
+    .node.dashed rect {
+      stroke-dasharray: 5 4;
+      stroke: var(--muted);
+    }
+
+    .node {
+      cursor: pointer;
+      outline: none;
+    }
+
+    .node:hover rect,
+    .node:focus-visible rect {
+      stroke-width: 2;
+    }
+
+    .node.sel rect {
+      stroke: var(--accent);
+      stroke-width: 2.2;
+    }
+
+    .node .title {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: 18px;
+      fill: var(--ink);
+    }
+
+    .node .line {
+      font-family: var(--serif);
+      font-size: 13.5px;
+      fill: var(--muted);
+    }
+
+    .node .status {
+      font-family: var(--mono);
+      font-size: 10.5px;
+    }
+
+    .st-done {
+      fill: var(--done);
+    }
+
+    .st-wip {
+      fill: var(--wip);
+    }
+
+    .st-plan {
+      fill: var(--plan);
+    }
+
+    .edge {
+      fill: none;
+      stroke: var(--muted);
+      stroke-width: 1.3;
+    }
+
+    .edge.dashed {
+      stroke-dasharray: 5 4;
+    }
+
+    .edge.loop {
+      stroke: var(--accent);
+      stroke-width: 1.5;
+    }
+
+    .edge-label {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 13px;
+      fill: var(--muted);
+    }
+
+    .edge-label.loop {
+      fill: var(--accent);
+    }
+
+    .arrow {
+      fill: var(--muted);
+    }
+
+    .arrow-loop {
+      fill: var(--accent);
+    }
+
+    .ext rect {
+      fill: none;
+      stroke: var(--rule);
+      stroke-dasharray: 2 3;
+    }
+
+    .ext .title {
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 600;
+      fill: var(--ink);
+    }
+
+    .ext .line {
+      font-family: var(--mono);
+      font-size: 11px;
+      fill: var(--muted);
+    }
+
+    .band-label {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 14px;
+      fill: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 22px;
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* ---- detail panel */
+    .detail {
+      margin-top: 0;
+      scroll-margin-top: 56px;
+      border-top: 2px solid var(--accent);
+      background: var(--card);
+      padding: 22px 24px 18px;
+    }
+
+    .detail h4 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .detail .meta {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .detail .meta b {
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+
+    .detail ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .detail li {
+      margin: 0 0 6px;
+    }
+
+    .refs {
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .refs a {
+      margin-right: 14px;
+    }
+
+    /* ---- live demos (#30). Room colours: categorical slots 1-5 for rooms with AC, bathroom grey.
    Validated light + dark (dataviz validator, adjacent pairs: CVD ΔE ≥ 8.4, normal ≥ 19.3).
    All-pairs fails beyond 3 slots and light slots 3-5 < 3:1 on the card, so identity never
    rests on colour alone: rooms labelled at line ends, hover tooltips, presses table. */
-:root { --r1: #2a78d6; --r2: #eb6834; --r3: #1baf7a; --r4: #eda100; --r5: #e87ba4; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --r1: #3987e5; --r2: #d95926; --r3: #199e70; --r4: #c98500; --r5: #d55181; }
-}
-:root[data-theme="dark"] { --r1: #3987e5; --r2: #d95926; --r3: #199e70; --r4: #c98500; --r5: #d55181; }
+    :root {
+      --r1: #2a78d6;
+      --r2: #eb6834;
+      --r3: #1baf7a;
+      --r4: #eda100;
+      --r5: #e87ba4;
+    }
 
-.demo { margin-top: 8px; }
-.demo h3 { margin-top: 28px; }
-.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; font-size: 14px; margin: 0 0 12px; }
-.controls label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); font-variant: small-caps; letter-spacing: 0.04em; }
-.controls label.grow { flex: 1 1 220px; }
-.controls input, .controls select, .knob input {
-  font-family: var(--mono); font-size: 13px; background: var(--card); color: var(--ink);
-  border: 1px solid var(--rule); border-radius: 2px; padding: 3px 6px; max-width: 100%;
-}
-.controls input[type="number"] { width: 76px; }
-.controls input[type="range"] { padding: 0; accent-color: var(--accent); }
-/* synth-style controls: silkscreen labels, ticked knobs, trim pots, faders, change LEDs */
-.knobs { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
-.grp { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end; background: var(--card);
-  border: 1.5px solid var(--ink); border-radius: 6px; padding: 8px 14px 12px; margin: 0; min-width: 0; }
-.grp legend { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 0 8px; color: var(--muted); }
-.knob { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 2px; border-radius: 4px; }
-.knob:hover { background: var(--paper); }
-.parts { display: flex; gap: 10px; align-items: flex-end; }
-.part { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.dial { width: 62px; height: 62px; touch-action: none; }
-.dial.pot { width: 40px; height: 40px; }
-.dial .tick { stroke: var(--muted); stroke-width: 1; }
-.dial .skirt { fill: var(--ink); }
-.dial .knurl { fill: none; stroke: var(--paper); stroke-opacity: 0.25; stroke-width: 3; stroke-dasharray: 1.3 1.7; }
-.dial .cap { fill: var(--ink); stroke: var(--paper); stroke-opacity: 0.35; stroke-width: 1; }
-.dial .ptr { stroke: var(--paper); stroke-width: 2.5; stroke-linecap: round; transform-origin: 0 0; }
-.dial:focus-visible { outline: 2px solid var(--accent); border-radius: 50%; }
-.led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: var(--rule); }
-.knob.changed .led { background: #ff3b30; box-shadow: 0 0 6px #ff3b30; }
-.part input[type="range"] { appearance: none; -webkit-appearance: none; background: none; border: 0; padding: 0; margin: 0; }
-/* fader: thin groove, small dark cap with a light centre line */
-input[type="range"].fader { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 64px;
-  background: linear-gradient(var(--rule), var(--rule)) center / 3px 100% no-repeat; }
-.fader::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 11px; border-radius: 3px; border: 0;
-  background: linear-gradient(var(--paper), var(--paper)) center / 100% 1.5px no-repeat, var(--ink); }
-.fader::-moz-range-thumb { width: 20px; height: 11px; border-radius: 3px; border: 0;
-  background: linear-gradient(var(--paper), var(--paper)) center / 100% 1.5px no-repeat, var(--ink); }
-.kd { display: none; position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 5; background: var(--ink); color: var(--paper);
-  width: max-content; max-width: 260px; font-size: 13px; line-height: 1.35; padding: 6px 9px; border-radius: 3px; pointer-events: none; }
-.knob:hover .kd, .knob:has(.dial:focus-visible) .kd { display: block; }  /* hover or keyboard focus; a mouse click must not pin it */
-.knob .k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
-.knob.changed .k { color: var(--accent); }
-.knob input[type="number"] { width: 58px; text-align: center; }
-.knob small { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-/* binary switch (not used yet): fixed colour, state is shown by an LED next to it */
-.tog { position: relative; width: 36px; height: 20px; border-radius: 10px; border: 1.5px solid var(--ink); background: var(--paper); padding: 0; cursor: pointer; }
-.tog i { position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--ink); transition: left .12s; }
-.tog.on i { left: 18px; }
-.num { display: flex; align-items: baseline; gap: 3px; }
-.num em { font-family: var(--mono); font-style: normal; font-size: 10px; color: var(--muted); min-width: 22px; }
-button.act, button.ghost { font: inherit; font-size: 14px; border-radius: 2px; padding: 4px 16px; cursor: pointer; border: 1px solid var(--ink); }
-button.act { background: var(--ink); color: var(--paper); }
-button.ghost { background: none; color: var(--ink); border-color: var(--rule); }
-button.act:disabled, button.ghost:disabled { opacity: 0.45; cursor: not-allowed; }
-.metabox { font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 22px; }
-.metabox b { color: var(--ink); font-family: var(--mono); font-weight: 500; font-size: 12.5px; }
-.note { font-size: 14px; color: var(--muted); font-style: italic; margin: 0 0 10px; }
-.error { color: var(--accent); font-size: 14px; }
-.sw { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
-details.tbl { margin-top: 10px; font-size: 14px; }
-details.tbl summary { cursor: pointer; color: var(--muted); }
-.tip { position: fixed; pointer-events: none; background: var(--card); color: var(--ink); border: 1px solid var(--ink);
-  padding: 6px 9px; font-size: 13px; line-height: 1.45; z-index: 10; max-width: 300px; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --r1: #3987e5;
+        --r2: #d95926;
+        --r3: #199e70;
+        --r4: #c98500;
+        --r5: #d55181;
+      }
+    }
 
-.edge.label { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 6 4; }
-.edge-hit { fill: none; stroke: transparent; stroke-width: 14; }
-.schema-edge { cursor: pointer; outline: none; }
-.schema-edge:hover .edge, .schema-edge:focus-visible .edge { stroke-width: 2.4; }
-.schema-edge.sel .edge { stroke: var(--accent); stroke-width: 2; }
-.schema-edge.sel .edge-label { fill: var(--accent); }
+    :root[data-theme="dark"] {
+      --r1: #3987e5;
+      --r2: #d95926;
+      --r3: #199e70;
+      --r4: #c98500;
+      --r5: #d55181;
+    }
 
-.viz text { fill: var(--muted); font-size: 12px; font-family: var(--serif); }
-.viz text.ink { fill: var(--ink); }
-.viz .axis text { font-family: var(--mono); font-size: 11px; }
-.viz .axis path, .viz .axis line { stroke: var(--rule); }
-.viz .grid line { stroke: var(--rule); stroke-dasharray: 2 3; }
-.viz .temp { fill: none; stroke-width: 2; stroke-linejoin: round; }
-.viz .setpoint { stroke-width: 1.5; stroke-dasharray: 6 4; }
-.viz .swatch { stroke-width: 3; stroke-linecap: round; }
-.viz .mu line { stroke: var(--muted); stroke-dasharray: 1 4; stroke-width: 1.3; }
-.viz .mu text { font-style: italic; font-size: 11.5px; }
-.viz .cross { stroke: var(--ink); stroke-opacity: 0.45; pointer-events: none; }
-.viz .hit, .viz .hitpad { fill: transparent; }
-.viz .press .dot-m { fill: currentColor; stroke: var(--card); stroke-width: 2; }
-.viz .press:not(.named) .dot-m { fill: var(--card); stroke: currentColor; stroke-width: 2; }
-.viz .press path { stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
-.viz .stay { pointer-events: none; stroke: var(--card); stroke-width: 1; }
-.viz .lane-label { font-family: var(--mono); font-size: 11.5px; fill: var(--ink); }
-.viz .lane-head { font-variant: small-caps; letter-spacing: 0.06em; }
-.viz .e { stroke: var(--rule); stroke-width: 1.3; fill: none; }
-.viz .adj { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
-.viz .space rect { fill: var(--card); stroke: var(--ink); }
-.viz .nm { fill: var(--ink); font-weight: 600; font-size: 13px; }
-.viz .val { font-family: var(--mono); font-size: 11px; }
-.viz .small { font-family: var(--mono); font-size: 10.5px; }
-.viz .sensor path { fill: var(--card); stroke: var(--ink); stroke-width: 1.3; }
-.viz .device .box { fill: var(--card); stroke: var(--ink); stroke-width: 1.3; }
-.viz .device.on .box { fill: var(--ink); }
-.viz .device .ring { fill: none; stroke: none; }
-.viz .device.lab .ring { stroke: var(--accent); stroke-width: 2; }
-.viz .yb { fill: var(--accent); font-family: var(--mono); font-size: 11px; }
-.viz .actuator circle { fill: var(--card); stroke: var(--muted); stroke-width: 1.2; }
-.viz .user circle { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
-.viz .user text { fill: var(--ink); font-family: var(--mono); font-size: 11px; }
-.viz .g-loc line { stroke: var(--accent); stroke-width: 1.5; }
-.viz .lab-a { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
-.viz .lab-a-t { fill: var(--accent); font-family: var(--mono); font-size: 11px; }
+    .demo {
+      margin-top: 8px;
+    }
 
-footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-/* chapter nav: fixed left, appears after scrolling past the header; needs spare margin, so wide screens only */
-.sidenav { display: none; }
-@media (min-width: 1440px) {
-  .sidenav { display: flex; flex-direction: column; position: fixed; top: 50%; left: 16px; width: 230px; transform: translateY(-50%);
-    gap: 2px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .25s; }
-  .sidenav.show { opacity: 1; pointer-events: auto; }
-  .sidenav a { color: var(--muted); text-decoration: none; display: flex; gap: 8px; padding: 3px 0 3px 8px; border-left: 2px solid var(--rule); }
-  .sidenav a:hover { color: var(--accent); }
-  .sidenav a.cur { color: var(--ink); border-left-color: var(--accent); }
-  .sidenav .n { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 2px; }
-}
-</style>
+    .demo h3 {
+      margin-top: 28px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      align-items: end;
+      font-size: 14px;
+      margin: 0 0 12px;
+    }
+
+    .controls label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      color: var(--muted);
+      font-variant: small-caps;
+      letter-spacing: 0.04em;
+    }
+
+    .controls label.grow {
+      flex: 1 1 220px;
+    }
+
+    .controls input,
+    .controls select,
+    .knob input {
+      font-family: var(--mono);
+      font-size: 13px;
+      background: var(--card);
+      color: var(--ink);
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      padding: 3px 6px;
+      max-width: 100%;
+    }
+
+    .controls input[type="number"] {
+      width: 76px;
+    }
+
+    .controls input[type="range"] {
+      padding: 0;
+      accent-color: var(--accent);
+    }
+
+    /* synth-style controls: silkscreen labels, ticked knobs, trim pots, faders, change LEDs */
+    .knobs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .grp {
+      flex: 1 1 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: flex-end;
+      background: var(--card);
+      border: 1.5px solid var(--ink);
+      border-radius: 6px;
+      padding: 8px 14px 12px;
+      margin: 0;
+      min-width: 0;
+    }
+
+    .grp legend {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 0 8px;
+      color: var(--muted);
+    }
+
+    .knob {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 2px;
+      border-radius: 4px;
+    }
+
+    .knob:hover {
+      background: var(--paper);
+    }
+
+    .parts {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .part {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .dial {
+      width: 62px;
+      height: 62px;
+      touch-action: none;
+    }
+
+    .dial.pot {
+      width: 40px;
+      height: 40px;
+    }
+
+    .dial .tick {
+      stroke: var(--muted);
+      stroke-width: 1;
+    }
+
+    .dial .skirt {
+      fill: var(--ink);
+    }
+
+    .dial .knurl {
+      fill: none;
+      stroke: var(--paper);
+      stroke-opacity: 0.25;
+      stroke-width: 3;
+      stroke-dasharray: 1.3 1.7;
+    }
+
+    .dial .cap {
+      fill: var(--ink);
+      stroke: var(--paper);
+      stroke-opacity: 0.35;
+      stroke-width: 1;
+    }
+
+    .dial .ptr {
+      stroke: var(--paper);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      transform-origin: 0 0;
+    }
+
+    .dial:focus-visible {
+      outline: 2px solid var(--accent);
+      border-radius: 50%;
+    }
+
+    .led {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: 1px;
+      background: var(--rule);
+    }
+
+    .knob.changed .led {
+      background: #ff3b30;
+      box-shadow: 0 0 6px #ff3b30;
+    }
+
+    .part input[type="range"] {
+      appearance: none;
+      -webkit-appearance: none;
+      background: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* fader: thin groove, small dark cap with a light centre line */
+    input[type="range"].fader {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 22px;
+      height: 64px;
+      background: linear-gradient(var(--rule), var(--rule)) center / 3px 100% no-repeat;
+    }
+
+    .fader::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 11px;
+      border-radius: 3px;
+      border: 0;
+      background: linear-gradient(var(--paper), var(--paper)) center / 100% 1.5px no-repeat, var(--ink);
+    }
+
+    .fader::-moz-range-thumb {
+      width: 20px;
+      height: 11px;
+      border-radius: 3px;
+      border: 0;
+      background: linear-gradient(var(--paper), var(--paper)) center / 100% 1.5px no-repeat, var(--ink);
+    }
+
+    .kd {
+      display: none;
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 6px);
+      z-index: 5;
+      background: var(--ink);
+      color: var(--paper);
+      width: max-content;
+      max-width: 260px;
+      font-size: 13px;
+      line-height: 1.35;
+      padding: 6px 9px;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    .knob:hover .kd,
+    .knob:has(.dial:focus-visible) .kd {
+      display: block;
+    }
+
+    /* hover or keyboard focus; a mouse click must not pin it */
+    .knob .k {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .knob.changed .k {
+      color: var(--accent);
+    }
+
+    .knob input[type="number"] {
+      width: 58px;
+      text-align: center;
+    }
+
+    .knob small {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* binary switch (not used yet): fixed colour, state is shown by an LED next to it */
+    .tog {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      border-radius: 10px;
+      border: 1.5px solid var(--ink);
+      background: var(--paper);
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .tog i {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--ink);
+      transition: left .12s;
+    }
+
+    .tog.on i {
+      left: 18px;
+    }
+
+    .num {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .num em {
+      font-family: var(--mono);
+      font-style: normal;
+      font-size: 10px;
+      color: var(--muted);
+      min-width: 22px;
+    }
+
+    button.act,
+    button.ghost {
+      font: inherit;
+      font-size: 14px;
+      border-radius: 2px;
+      padding: 4px 16px;
+      cursor: pointer;
+      border: 1px solid var(--ink);
+    }
+
+    button.act {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    button.ghost {
+      background: none;
+      color: var(--ink);
+      border-color: var(--rule);
+    }
+
+    button.act:disabled,
+    button.ghost:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .metabox {
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 22px;
+    }
+
+    .metabox b {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 12.5px;
+    }
+
+    .note {
+      font-size: 14px;
+      color: var(--muted);
+      font-style: italic;
+      margin: 0 0 10px;
+    }
+
+    .error {
+      color: var(--accent);
+      font-size: 14px;
+    }
+
+    .sw {
+      display: inline-block;
+      width: 14px;
+      height: 3px;
+      vertical-align: middle;
+      margin-right: 6px;
+      border-radius: 2px;
+    }
+
+    details.tbl {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    details.tbl summary {
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .tip {
+      position: fixed;
+      pointer-events: none;
+      background: var(--card);
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      padding: 6px 9px;
+      font-size: 13px;
+      line-height: 1.45;
+      z-index: 10;
+      max-width: 300px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+    }
+
+    .edge.label {
+      stroke: var(--accent);
+      stroke-width: 1.6;
+      stroke-dasharray: 6 4;
+    }
+
+    .edge-hit {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 14;
+    }
+
+    .schema-edge {
+      cursor: pointer;
+      outline: none;
+    }
+
+    .schema-edge:hover .edge,
+    .schema-edge:focus-visible .edge {
+      stroke-width: 2.4;
+    }
+
+    .schema-edge.sel .edge {
+      stroke: var(--accent);
+      stroke-width: 2;
+    }
+
+    .schema-edge.sel .edge-label {
+      fill: var(--accent);
+    }
+
+    .viz text {
+      fill: var(--muted);
+      font-size: 12px;
+      font-family: var(--serif);
+    }
+
+    .viz text.ink {
+      fill: var(--ink);
+    }
+
+    .viz .axis text {
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .viz .axis path,
+    .viz .axis line {
+      stroke: var(--rule);
+    }
+
+    .viz .grid line {
+      stroke: var(--rule);
+      stroke-dasharray: 2 3;
+    }
+
+    .viz .temp {
+      fill: none;
+      stroke-width: 2;
+      stroke-linejoin: round;
+    }
+
+    .viz .setpoint {
+      stroke-width: 1.5;
+      stroke-dasharray: 6 4;
+    }
+
+    .viz .swatch {
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .viz .mu line {
+      stroke: var(--muted);
+      stroke-dasharray: 1 4;
+      stroke-width: 1.3;
+    }
+
+    .viz .mu text {
+      font-style: italic;
+      font-size: 11.5px;
+    }
+
+    .viz .cross {
+      stroke: var(--ink);
+      stroke-opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .viz .hit,
+    .viz .hitpad {
+      fill: transparent;
+    }
+
+    .viz .press .dot-m {
+      fill: currentColor;
+      stroke: var(--card);
+      stroke-width: 2;
+    }
+
+    .viz .press:not(.named) .dot-m {
+      fill: var(--card);
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+
+    .viz .press path {
+      stroke: currentColor;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+    }
+
+    .viz .stay {
+      pointer-events: none;
+      stroke: var(--card);
+      stroke-width: 1;
+    }
+
+    .viz .lane-label {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      fill: var(--ink);
+    }
+
+    .viz .lane-head {
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+    }
+
+    .viz .e {
+      stroke: var(--rule);
+      stroke-width: 1.3;
+      fill: none;
+    }
+
+    .viz .adj {
+      stroke: var(--muted);
+      stroke-width: 1;
+      stroke-dasharray: 3 3;
+      fill: none;
+    }
+
+    .viz .space rect {
+      fill: var(--card);
+      stroke: var(--ink);
+    }
+
+    .viz .nm {
+      fill: var(--ink);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .viz .val {
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .viz .small {
+      font-family: var(--mono);
+      font-size: 10.5px;
+    }
+
+    .viz .sensor path {
+      fill: var(--card);
+      stroke: var(--ink);
+      stroke-width: 1.3;
+    }
+
+    .viz .device .box {
+      fill: var(--card);
+      stroke: var(--ink);
+      stroke-width: 1.3;
+    }
+
+    .viz .device.on .box {
+      fill: var(--ink);
+    }
+
+    .viz .device .ring {
+      fill: none;
+      stroke: none;
+    }
+
+    .viz .device.lab .ring {
+      stroke: var(--accent);
+      stroke-width: 2;
+    }
+
+    .viz .yb {
+      fill: var(--accent);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .viz .actuator circle {
+      fill: var(--card);
+      stroke: var(--muted);
+      stroke-width: 1.2;
+    }
+
+    .viz .user circle {
+      fill: var(--accent);
+      stroke: var(--card);
+      stroke-width: 2;
+    }
+
+    .viz .user text {
+      fill: var(--ink);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .viz .g-loc line {
+      stroke: var(--accent);
+      stroke-width: 1.5;
+    }
+
+    .viz .lab-a {
+      stroke: var(--accent);
+      stroke-width: 1.5;
+      stroke-dasharray: 5 4;
+      fill: none;
+    }
+
+    .viz .lab-a-t {
+      fill: var(--accent);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    footer {
+      margin-top: 72px;
+      padding-top: 16px;
+      border-top: 1px solid var(--ink);
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* chapter nav: fixed left, appears after scrolling past the header; needs spare margin, so wide screens only */
+    .sidenav {
+      display: none;
+    }
+
+    @media (min-width: 1440px) {
+      .sidenav {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 50%;
+        left: 16px;
+        width: 230px;
+        transform: translateY(-50%);
+        gap: 2px;
+        font-size: 14px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .25s;
+      }
+
+      .sidenav.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .sidenav a {
+        color: var(--muted);
+        text-decoration: none;
+        display: flex;
+        gap: 8px;
+        padding: 3px 0 3px 8px;
+        border-left: 2px solid var(--rule);
+      }
+
+      .sidenav a:hover {
+        color: var(--accent);
+      }
+
+      .sidenav a.cur {
+        color: var(--ink);
+        border-left-color: var(--accent);
+      }
+
+      .sidenav .n {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        padding-top: 2px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div id="app" class="page" v-cloak>
+  <div id="app" class="page" v-cloak>
 
-  <nav class="sidenav" :class="{ show: navShow }" aria-label="Chapters">
-    <a v-for="s in sections" :key="s.id" :href="'#' + s.id" :class="{ cur: s.id === cur }"><span class="n">{{ s.n }}</span>{{ s.title }}</a>
-  </nav>
-
-  <header class="mast">
-    <div class="kicker">Paper 1 · Baseline · Live poster (draft)</div>
-    <h1>Learning occupant preferences and resolving comfort conflicts with heterogeneous graph neural networks</h1>
-    <div class="byline">Rafael Silva · Doctoral research · {{ today }}</div>
-    <div class="toolbar">
-      <span class="byline">A scrolling account of each development phase: what was built, how, and why.</span>
-      <button class="theme" @click="toggleTheme" :aria-label="'Switch to ' + (dark ? 'light' : 'dark') + ' theme'">{{ dark ? 'Light' : 'Dark' }} theme</button>
-    </div>
-    <p class="abstract">
-      A building should keep every occupant comfortable with the fewest manual interventions, and
-      resolve disagreements in shared rooms fairly and explainably. We model each moment of a building
-      as a heterogeneous graph of people, rooms, devices and sensors. One head learns each person's
-      preferred setpoint with its uncertainty; a second weighs the people sharing a room to choose one
-      setpoint. A simulator with hidden ground truth makes the recovery of preferences measurable before
-      the same pipeline runs on real buildings.
-    </p>
-    <nav class="toc" aria-label="Contents">
-      <a v-for="s in sections" :key="s.id" :href="'#' + s.id"><span class="n">{{ s.n }}</span>{{ s.title }}</a>
+    <nav class="sidenav" :class="{ show: navShow }" aria-label="Chapters">
+      <a v-for="s in sections" :key="s.id" :href="'#' + s.id" :class="{ cur: s.id === cur }"><span class="n">{{ s.n
+          }}</span>{{ s.title }}</a>
     </nav>
-  </header>
 
-  <!-- 1 -->
-  <section id="problem">
-    <h2><span class="n">§1</span>Problem and goal</h2>
-    <p class="lede">Comfort is personal, rooms are shared, and people rarely say what they want — they press a button when something is wrong.</p>
-    <div class="cols">
-      <div>
-        <h3>The problem</h3>
-        <p>Thermostats treat a room as if it had one occupant with a fixed preference. Real rooms hold
-          several people whose preferences differ, change with activity, and are expressed only
-          indirectly, through overrides. Many presses are anonymous: a shared remote does not say who pressed it.</p>
+    <header class="mast">
+      <div class="kicker">Paper 1 · Baseline</div>
+      <h1>Learning occupant preferences and resolving comfort conflicts with heterogeneous graph neural networks</h1>
+      <div class="byline">Rafael Silva · Doctoral research · {{ today }}</div>
+      <div class="toolbar">
+        <button class="theme" @click="toggleTheme" :aria-label="'Switch to ' + (dark ? 'light' : 'dark') + ' theme'">{{
+          dark ? 'Light' : 'Dark' }} theme</button>
       </div>
-      <div>
-        <h3>The goal</h3>
-        <p>Keep every occupant comfortable with the fewest manual interventions, resolve shared-space
-          conflicts fairly, and explain every decision. Version 1 is the simplest model that works and is
-          frozen as a baseline; each extension is one paper compared against it.</p>
-      </div>
-    </div>
-    <table class="obj">
-      <thead><tr><th>#</th><th>Objective</th><th>Mechanism</th></tr></thead>
-      <tbody>
-        <tr v-for="o in objectives" :key="o[0]"><td>{{ o[0] }}</td><td>{{ o[1] }}</td><td>{{ o[2] }}</td></tr>
-      </tbody>
-    </table>
-  </section>
+      <p class="abstract">
+        A building should keep every occupant comfortable with the fewest manual interventions, and
+        resolve disagreements in shared rooms fairly and explainably. We model each moment of a building
+        as a heterogeneous graph of people, rooms, devices and sensors. One head learns each person's
+        preferred setpoint with its uncertainty; a second weighs the people sharing a room to choose one
+        setpoint. A simulator with hidden ground truth makes the recovery of preferences measurable before
+        the same pipeline runs on real buildings.
+      </p>
+      <nav class="toc" aria-label="Contents">
+        <a v-for="s in sections" :key="s.id" :href="'#' + s.id"><span class="n">{{ s.n }}</span>{{ s.title }}</a>
+      </nav>
+    </header>
 
-  <!-- 2 -->
-  <section id="architecture">
-    <h2><span class="n">§2</span>Concept architecture</h2>
-    <p class="lede">One pipeline from logs to decisions. Simulator and real buildings write the same log format, so nothing the model sees can exist only in simulation.</p>
-    <figure>
-      <div class="figure-frame">
-        <svg viewBox="0 0 1200 600" role="img" aria-labelledby="arch-title arch-desc">
-          <title id="arch-title">Concept architecture of the preference graph system</title>
-          <desc id="arch-desc">Simulator and real buildings write logs; the builder turns logs into graph snapshots; an encoder feeds Head A (preference) and Head B (conflict resolution); decisions act on the HVAC; evaluation compares predictions with hidden truth.</desc>
-          <defs>
-            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
-            <marker id="arr-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-loop"/></marker>
-          </defs>
-
-          <text v-for="c in columns" :key="c.t" class="col-head" :x="c.x" y="26" text-anchor="middle">{{ c.t }}</text>
-
-          <g v-for="e in edges" :key="e.id">
-            <path :d="e.d" :class="['edge', e.kind]" :marker-end="e.kind === 'loop' ? 'url(#arr-loop)' : 'url(#arr)'"/>
-            <text v-if="e.label" :x="e.lx" :y="e.ly" :text-anchor="e.anchor || 'middle'" :class="['edge-label', e.kind]">{{ e.label }}</text>
-          </g>
-
-          <g v-for="n in nodes" :key="n.id" :class="['node', n.dashed && 'dashed', sel === n.id && 'sel']"
-             tabindex="0" role="button" :aria-label="n.title + ': show how and why'" :aria-pressed="sel === n.id"
-             @click="sel = sel === n.id ? null : n.id" @keydown.enter.prevent="sel = sel === n.id ? null : n.id" @keydown.space.prevent="sel = sel === n.id ? null : n.id">
-            <rect :x="n.x" :y="n.y" :width="n.w" :height="n.h" rx="2"/>
-            <text class="title" :x="n.x + 14" :y="n.y + 28">{{ n.title }}</text>
-            <circle :cx="n.x + n.w - 14" :cy="n.y + 22" r="4" :class="'st-' + n.status"/>
-            <text v-for="(l, i) in n.lines" :key="i" class="line" :x="n.x + 14" :y="n.y + 52 + i * 20">{{ l }}</text>
-          </g>
-
-          <text class="band-label" x="20" y="482">Extensions — one paper each, measured against the frozen v1 baseline</text>
-          <g v-for="(x, i) in extensions" :key="x.t" class="ext">
-            <rect :x="20 + i * 195" y="496" width="180" height="76" rx="2"/>
-            <text class="title" :x="34 + i * 195" y="524">{{ x.t }}</text>
-            <text class="line" :x="34 + i * 195" y="546">{{ x.issue }}</text>
-            <text class="line" :x="34 + i * 195" y="562">{{ x.when }}</text>
-          </g>
-        </svg>
-      </div>
-      <div class="detail" id="detail-arch" v-if="selected" aria-live="polite">
-    <h4>{{ selected.title }}</h4>
-    <div class="meta">
-      <span><b :style="{ color: 'var(--' + selected.status + ')' }">● {{ statusText[selected.status] }}</b></span>
-      <span v-if="selected.where">{{ selected.where }}</span>
-    </div>
-    <div class="cols">
-      <div><h3>How</h3><ul><li v-for="(t, i) in selected.how" :key="i" v-html="t"></li></ul></div>
-      <div><h3>Why</h3><ul><li v-for="(t, i) in selected.why" :key="i" v-html="t"></li></ul></div>
-    </div>
-    <div class="refs" v-if="selected.refs">
-      <a v-for="r in selected.refs" :key="r[1]" :href="r[1]" target="_blank" rel="noopener">{{ r[0] }}</a>
-    </div>
-  </div>
-      <div class="legend" aria-label="Legend">
-        <span><i class="dot" style="background:var(--done)"></i>built</span>
-        <span><i class="dot" style="background:var(--wip)"></i>in progress</span>
-        <span><i class="dot" style="background:var(--plan)"></i>planned</span>
-        <span>— data flow</span>
-        <span>- - hidden truth, simulator only</span>
-        <span style="color:var(--accent)">— closed loop</span>
-      </div>
-      <figcaption><b>Figure 1.</b> Concept architecture. The hidden truth (dashed) reaches evaluation
-        only; the builder never reads it. Head B consumes Head A's <i>μ</i> and <i>σ</i>, so an uncertain
-        person counts less in a shared room. Click a block for how and why; click it again to close.</figcaption>
-    </figure>
-
-  </section>
-
-  <!-- 3..9: skeleton, filled in #30 (demos) and #33 (content) -->
-  <section v-for="s in sections.slice(2)" :key="s.id" :id="s.id">
-    <h2><span class="n">§{{ s.n }}</span>{{ s.title }}</h2>
-    <p class="lede">{{ s.lede }}</p>
-
-    <!-- §3 why a graph: argument + interactive schema -->
-    <div v-if="s.id === 'graph'">
+    <!-- 1 -->
+    <section id="problem">
+      <h2><span class="n">§1</span>Problem and goal</h2>
+      <p class="lede">Comfort is personal, rooms are shared, and people rarely say what they want — they press a button
+        when something is wrong.</p>
       <div class="cols">
         <div>
-          <h3>Why not a table</h3>
-          <p>Comfort is relational. Whether a press means “too cold for me” or “too cold for us” depends on who
-            else is in the room, which device serves it, and what the sensor reads. A row per person loses that;
-            a conflict is simply two <i>located_in</i> edges into the same space.</p>
-          <p>Buildings differ in size and shape: one to four people, three to seven rooms. A graph neural network
-            applies the same weights to every node of a type, so one model serves every house, including houses it
-            has never seen (the building holdout).</p>
+          <h3>The problem</h3>
+          <p>Thermostats treat a room as if it had one occupant with a fixed preference. Real rooms hold
+            several people whose preferences differ, change with activity, and are expressed only
+            indirectly, through overrides. Many presses are anonymous: a shared remote does not say who pressed it.</p>
         </div>
         <div>
-          <h3>Why heterogeneous</h3>
-          <p>People, rooms, sensors and devices carry different features, so each type gets its own parameters
-            (<code>to_hetero</code>). Messages pass along typed edges: a person's representation hears the room's
-            temperature through <i>sensor → space → user</i> and the device state through <i>device → space → user</i>.</p>
-          <p>One graph per 15-minute window holds only the present. Long-term preference lives in a learned
-            embedding per person, shared by every window in which they appear.</p>
+          <h3>The goal</h3>
+          <p>Keep every occupant comfortable with the fewest manual interventions, resolve shared-space
+            conflicts fairly, and explain every decision. Version 1 is the simplest model that works and is
+            frozen as a baseline; each extension is one paper compared against it.</p>
         </div>
       </div>
+      <table class="obj">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Objective</th>
+            <th>Mechanism</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="o in objectives" :key="o[0]">
+            <td>{{ o[0] }}</td>
+            <td>{{ o[1] }}</td>
+            <td>{{ o[2] }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 2 -->
+    <section id="architecture">
+      <h2><span class="n">§2</span>Concept architecture</h2>
+      <p class="lede">One pipeline from logs to decisions. Simulator and real buildings write the same log format, so
+        nothing the model sees can exist only in simulation.</p>
       <figure>
         <div class="figure-frame">
-          <svg viewBox="0 0 1100 540" role="img" aria-labelledby="schema-title schema-desc">
-            <title id="schema-title">Graph schema: node and edge types</title>
-            <desc id="schema-desc">Users are located in spaces; sensors are in spaces; devices are installed in spaces; actuators act on devices; spaces are adjacent to spaces. The prefers edge from user to device is a label only, never input. Camera and activity nodes are planned.</desc>
-            <g v-for="e in schemaEdges" :key="e.id" :class="['schema-edge', schemaSel === e.id && 'sel']" tabindex="0" role="button"
-               :aria-label="e.title + ': show how and why'" :aria-pressed="schemaSel === e.id"
-               @click="schemaSel = schemaSel === e.id ? null : e.id" @keydown.enter.prevent="schemaSel = schemaSel === e.id ? null : e.id" @keydown.space.prevent="schemaSel = schemaSel === e.id ? null : e.id">
-              <path :d="e.d" class="edge-hit"/>
-              <path :d="e.d" :class="['edge', e.kind]" :marker-end="e.kind === 'label' ? 'url(#arr-loop)' : 'url(#arr)'"/>
-              <text :x="e.lx" :y="e.ly" :text-anchor="e.anchor || 'middle'" :class="['edge-label', e.kind === 'label' && 'loop']">{{ e.label }}</text>
+          <svg viewBox="0 0 1200 600" role="img" aria-labelledby="arch-title arch-desc">
+            <title id="arch-title">Concept architecture of the preference graph system</title>
+            <desc id="arch-desc">Simulator and real buildings write logs; the builder turns logs into graph snapshots;
+              an encoder feeds Head A (preference) and Head B (conflict resolution); decisions act on the HVAC;
+              evaluation compares predictions with hidden truth.</desc>
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+                orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" class="arrow" />
+              </marker>
+              <marker id="arr-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+                orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" class="arrow-loop" />
+              </marker>
+            </defs>
+
+            <text v-for="c in columns" :key="c.t" class="col-head" :x="c.x" y="26" text-anchor="middle">{{ c.t }}</text>
+
+            <g v-for="e in edges" :key="e.id">
+              <path :d="e.d" :class="['edge', e.kind]"
+                :marker-end="e.kind === 'loop' ? 'url(#arr-loop)' : 'url(#arr)'" />
+              <text v-if="e.label" :x="e.lx" :y="e.ly" :text-anchor="e.anchor || 'middle'"
+                :class="['edge-label', e.kind]">{{ e.label }}</text>
             </g>
-            <g v-for="n in schemaNodes" :key="n.id" :class="['node', n.status === 'plan' && 'dashed', schemaSel === n.id && 'sel']"
-               tabindex="0" role="button" :aria-label="n.title + ' node: show how and why'" :aria-pressed="schemaSel === n.id"
-               @click="schemaSel = schemaSel === n.id ? null : n.id" @keydown.enter.prevent="schemaSel = schemaSel === n.id ? null : n.id" @keydown.space.prevent="schemaSel = schemaSel === n.id ? null : n.id">
-              <rect :x="n.x" :y="n.y" width="200" height="84" rx="2"/>
+
+            <g v-for="n in nodes" :key="n.id" :class="['node', n.dashed && 'dashed', sel === n.id && 'sel']"
+              tabindex="0" role="button" :aria-label="n.title + ': show how and why'" :aria-pressed="sel === n.id"
+              @click="sel = sel === n.id ? null : n.id" @keydown.enter.prevent="sel = sel === n.id ? null : n.id"
+              @keydown.space.prevent="sel = sel === n.id ? null : n.id">
+              <rect :x="n.x" :y="n.y" :width="n.w" :height="n.h" rx="2" />
               <text class="title" :x="n.x + 14" :y="n.y + 28">{{ n.title }}</text>
-              <circle :cx="n.x + 186" :cy="n.y + 22" r="4" :class="'st-' + n.status"/>
+              <circle :cx="n.x + n.w - 14" :cy="n.y + 22" r="4" :class="'st-' + n.status" />
               <text v-for="(l, i) in n.lines" :key="i" class="line" :x="n.x + 14" :y="n.y + 52 + i * 20">{{ l }}</text>
+            </g>
+
+            <text class="band-label" x="20" y="482">Extensions — one paper each, measured against the frozen v1
+              baseline</text>
+            <g v-for="(x, i) in extensions" :key="x.t" class="ext">
+              <rect :x="20 + i * 195" y="496" width="180" height="76" rx="2" />
+              <text class="title" :x="34 + i * 195" y="524">{{ x.t }}</text>
+              <text class="line" :x="34 + i * 195" y="546">{{ x.issue }}</text>
+              <text class="line" :x="34 + i * 195" y="562">{{ x.when }}</text>
             </g>
           </svg>
         </div>
-        <div class="detail" id="detail-schema" v-if="schemaSelected" aria-live="polite">
-        <h4>{{ schemaSelected.title }}</h4>
-        <div class="meta">
-          <span><b :style="{ color: 'var(--' + schemaSelected.status + ')' }">● {{ statusText[schemaSelected.status] }}</b></span>
-          <span>{{ schemaSelected.where }}</span>
+        <div class="detail" id="detail-arch" v-if="selected" aria-live="polite">
+          <h4>{{ selected.title }}</h4>
+          <div class="meta">
+            <span><b :style="{ color: 'var(--' + selected.status + ')' }">● {{ statusText[selected.status] }}</b></span>
+            <span v-if="selected.where">{{ selected.where }}</span>
+          </div>
+          <div class="cols">
+            <div>
+              <h3>How</h3>
+              <ul>
+                <li v-for="(t, i) in selected.how" :key="i" v-html="t"></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Why</h3>
+              <ul>
+                <li v-for="(t, i) in selected.why" :key="i" v-html="t"></li>
+              </ul>
+            </div>
+          </div>
+          <div class="refs" v-if="selected.refs">
+            <a v-for="r in selected.refs" :key="r[1]" :href="r[1]" target="_blank" rel="noopener">{{ r[0] }}</a>
+          </div>
         </div>
-        <div class="cols">
-          <div><h3>How</h3><ul><li v-for="(t, i) in schemaSelected.how" :key="i" v-html="t"></li></ul></div>
-          <div><h3>Why</h3><ul><li v-for="(t, i) in schemaSelected.why" :key="i" v-html="t"></li></ul></div>
-        </div>
-      </div>
-        <div class="legend">
+        <div class="legend" aria-label="Legend">
           <span><i class="dot" style="background:var(--done)"></i>built</span>
-          <span><i class="dot" style="background:var(--plan)"></i>planned (dashed)</span>
-          <span>— input edge (static or per window)</span>
-          <span style="color:var(--accent)">- - label only, never input</span>
-          <span>every input edge also runs in reverse</span>
+          <span><i class="dot" style="background:var(--wip)"></i>in progress</span>
+          <span><i class="dot" style="background:var(--plan)"></i>planned</span>
+          <span>— data flow</span>
+          <span>- - hidden truth, simulator only</span>
+          <span style="color:var(--accent)">— closed loop</span>
         </div>
-        <figcaption><b>Figure 2.</b> The schema of one snapshot as <code>build.py</code> writes it. Solid types exist
-          today; dashed ones are planned (activity in S2, camera in the real building). The accent edge is what the
-          model must predict, so it never appears as input. Select a node or edge for its features and the reasoning
-          behind it.</figcaption>
+        <figcaption><b>Figure 1.</b> Concept architecture. The hidden truth (dashed) reaches evaluation
+          only; the builder never reads it. Head B consumes Head A's <i>μ</i> and <i>σ</i>, so an uncertain
+          person counts less in a shared room. Click a block for how and why; click it again to close.</figcaption>
       </figure>
-      <h3 style="margin-top:28px">Left out on purpose</h3>
-      <table class="obj">
-        <thead><tr><th>Not in the graph</th><th>Why</th></tr></thead>
-        <tbody>
-          <tr><td>context node</td><td>Time, weather and occupancy are shared by every room; as space features they add the same information without a hub node connected to everything.</td></tr>
-          <tr><td>preference node</td><td>Preference is Head A's output. As a node it would put the answer in the input.</td></tr>
-          <tr><td>co_present edge</td><td>Two <i>located_in</i> edges into one space already say it, and Head B attends over everyone in a room. Re-added only if an ablation shows a gain.</td></tr>
-          <tr><td>press as input</td><td>A press inside the window is the label. Setpoints are read strictly before the window starts, so the answer cannot leak in.</td></tr>
-        </tbody>
-      </table>
-    </div>
 
-    <!-- §4 live demo: knobs + run + meta + house timeline -->
-    <div class="demo" v-else-if="s.id === 'simulator'">
-      <p class="error" v-if="demoError">{{ demoError }}</p>
-      <h3>Knobs</h3>
-      <p class="note" v-if="!live">Static export: knobs are read-only. Run <code>python server.py</code> locally to simulate.</p>
-      <p class="note" v-else>Exploration only: every number in a paper comes from a scripted run (D16). A run writes <code>ui.db</code>, never <code>sim.db</code>.</p>
-      <div class="knobs" v-if="knobEdits">
-        <fieldset class="grp" v-for="[g, ks] in KNOB_GROUPS" :key="g">
-          <legend>{{ g }}</legend>
-          <div v-for="k in ks" :key="k" :class="['knob', k in changedKnobs && 'changed']" tabindex="0"
-               @dblclick="$event.target.type !== 'number' && resetOne(k)">
-            <div class="parts">
-              <div class="part" v-for="p in parts(k)" :key="p.i">
-                <input v-if="styleOf(k) === 'fader'" type="range" class="fader" :min="KNOB_INFO[k][1]" :max="KNOB_INFO[k][2]"
-                       :step="(KNOB_INFO[k][2] - KNOB_INFO[k][1]) / 100" :value="get(k, p.i)" :disabled="!live"
-                       :aria-label="k + ' ' + p.label" @input="set(k, p.i, +$event.target.value)">
-                <svg v-else :class="['dial', styleOf(k)]" viewBox="-26 -26 52 52" role="slider" tabindex="0"
-                     :aria-label="k" :aria-valuenow="get(k, p.i)" @pointerdown="dialDrag($event, k, p.i)"
-                     @keydown.up.prevent="nudge(k, p.i, 1)" @keydown.down.prevent="nudge(k, p.i, -1)"
-                     :style="{ cursor: live ? 'ns-resize' : 'default' }">
-                  <line v-for="n in 11" :key="n" class="tick" :style="{ transform: 'rotate(' + (-135 + 27 * (n - 1)) + 'deg)' }" y1="-24" y2="-21"/>
-                  <template v-if="styleOf(k) === 'knob'">
-                    <circle class="skirt" r="18"/><circle class="knurl" r="17"/>
-                    <circle class="cap" r="12"/>
-                  </template>
-                  <circle v-else class="skirt" r="15"/>
-                  <line class="ptr" :style="{ transform: 'rotate(' + dialAngle(k, p.i) + 'deg)' }"
-                        :y1="styleOf(k) === 'knob' ? -13 : -5" :y2="styleOf(k) === 'knob' ? -18 : -13"/>
-                </svg>
-                <span class="num"><input type="number" step="any" :value="get(k, p.i)" :disabled="!live" :aria-label="k + ' ' + p.label"
-                       @input="set(k, p.i, +$event.target.value)"><em>{{ KNOB_UNITS[k] }}</em></span>
-                <small v-if="p.label">{{ p.label }}</small>
+    </section>
+
+    <!-- 3..9: skeleton, filled in #30 (demos) and #33 (content) -->
+    <section v-for="s in sections.slice(2)" :key="s.id" :id="s.id">
+      <h2><span class="n">§{{ s.n }}</span>{{ s.title }}</h2>
+      <p class="lede">{{ s.lede }}</p>
+
+      <!-- §3 why a graph: argument + interactive schema -->
+      <div v-if="s.id === 'graph'">
+        <div class="cols">
+          <div>
+            <h3>Why not a table</h3>
+            <p>Comfort is relational. Whether a press means “too cold for me” or “too cold for us” depends on who
+              else is in the room, which device serves it, and what the sensor reads. A row per person loses that;
+              a conflict is simply two <i>located_in</i> edges into the same space.</p>
+            <p>Buildings differ in size and shape: one to four people, three to seven rooms. A graph neural network
+              applies the same weights to every node of a type, so one model serves every house, including houses it
+              has never seen (the building holdout).</p>
+          </div>
+          <div>
+            <h3>Why heterogeneous</h3>
+            <p>People, rooms, sensors and devices carry different features, so each type gets its own parameters
+              (<code>to_hetero</code>). Messages pass along typed edges: a person's representation hears the room's
+              temperature through <i>sensor → space → user</i> and the device state through <i>device → space →
+                user</i>.</p>
+            <p>One graph per 15-minute window holds only the present. Long-term preference lives in a learned
+              embedding per person, shared by every window in which they appear.</p>
+          </div>
+        </div>
+        <figure>
+          <div class="figure-frame">
+            <svg viewBox="0 0 1100 540" role="img" aria-labelledby="schema-title schema-desc">
+              <title id="schema-title">Graph schema: node and edge types</title>
+              <desc id="schema-desc">Users are located in spaces; sensors are in spaces; devices are installed in
+                spaces; actuators act on devices; spaces are adjacent to spaces. The prefers edge from user to device is
+                a label only, never input. Camera and activity nodes are planned.</desc>
+              <g v-for="e in schemaEdges" :key="e.id" :class="['schema-edge', schemaSel === e.id && 'sel']" tabindex="0"
+                role="button" :aria-label="e.title + ': show how and why'" :aria-pressed="schemaSel === e.id"
+                @click="schemaSel = schemaSel === e.id ? null : e.id"
+                @keydown.enter.prevent="schemaSel = schemaSel === e.id ? null : e.id"
+                @keydown.space.prevent="schemaSel = schemaSel === e.id ? null : e.id">
+                <path :d="e.d" class="edge-hit" />
+                <path :d="e.d" :class="['edge', e.kind]"
+                  :marker-end="e.kind === 'label' ? 'url(#arr-loop)' : 'url(#arr)'" />
+                <text :x="e.lx" :y="e.ly" :text-anchor="e.anchor || 'middle'"
+                  :class="['edge-label', e.kind === 'label' && 'loop']">{{ e.label }}</text>
+              </g>
+              <g v-for="n in schemaNodes" :key="n.id"
+                :class="['node', n.status === 'plan' && 'dashed', schemaSel === n.id && 'sel']" tabindex="0"
+                role="button" :aria-label="n.title + ' node: show how and why'" :aria-pressed="schemaSel === n.id"
+                @click="schemaSel = schemaSel === n.id ? null : n.id"
+                @keydown.enter.prevent="schemaSel = schemaSel === n.id ? null : n.id"
+                @keydown.space.prevent="schemaSel = schemaSel === n.id ? null : n.id">
+                <rect :x="n.x" :y="n.y" width="200" height="84" rx="2" />
+                <text class="title" :x="n.x + 14" :y="n.y + 28">{{ n.title }}</text>
+                <circle :cx="n.x + 186" :cy="n.y + 22" r="4" :class="'st-' + n.status" />
+                <text v-for="(l, i) in n.lines" :key="i" class="line" :x="n.x + 14" :y="n.y + 52 + i * 20">{{ l
+                  }}</text>
+              </g>
+            </svg>
+          </div>
+          <div class="detail" id="detail-schema" v-if="schemaSelected" aria-live="polite">
+            <h4>{{ schemaSelected.title }}</h4>
+            <div class="meta">
+              <span><b :style="{ color: 'var(--' + schemaSelected.status + ')' }">● {{ statusText[schemaSelected.status]
+                  }}</b></span>
+              <span>{{ schemaSelected.where }}</span>
+            </div>
+            <div class="cols">
+              <div>
+                <h3>How</h3>
+                <ul>
+                  <li v-for="(t, i) in schemaSelected.how" :key="i" v-html="t"></li>
+                </ul>
+              </div>
+              <div>
+                <h3>Why</h3>
+                <ul>
+                  <li v-for="(t, i) in schemaSelected.why" :key="i" v-html="t"></li>
+                </ul>
               </div>
             </div>
-            <span class="k"><i class="led"></i>{{ k }}</span>
-            <span class="kd" role="tooltip">{{ KNOB_INFO[k][0] }}<template v-if="live && k in changedKnobs"> <i>Double-click to reset.</i></template></span>
           </div>
-        </fieldset>
-      </div>
-      <div class="controls">
-        <label>houses<input type="number" min="1" :max="caps.houses" v-model.number="runArgs.houses" :disabled="!live"></label>
-        <label>days<input type="number" min="1" :max="caps.days" v-model.number="runArgs.days" :disabled="!live"></label>
-        <label>seed<input type="number" v-model.number="runArgs.seed" :disabled="!live"></label>
-        <button class="act" @click="run" :disabled="!live || running">{{ running ? 'Running…' : 'Run' }}</button>
-        <button class="ghost" @click="resetKnobs" :disabled="!live || !Object.keys(changedKnobs).length">Reset knobs</button>
-      </div>
-      <div class="metabox" v-if="meta" aria-live="polite">
-        <span>database <b>{{ dbName }}.db</b></span>
-        <span v-if="meta.note">{{ meta.note }}</span>
-        <template v-else>
-          <span>seed <b>{{ meta.seed }}</b></span>
-          <span>size <b>{{ meta.n_houses }} houses × {{ meta.n_days }} days</b></span>
-          <span>code <b>{{ meta.git_hash.slice(0, 7) }}{{ meta.git_dirty === 'true' ? ' + uncommitted' : '' }}</b></span>
-          <span>created <b>{{ meta.created }}</b></span>
-          <span>overrides <b>{{ metaOverrides || 'none' }}</b></span>
-        </template>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--done)"></i>built</span>
+            <span><i class="dot" style="background:var(--plan)"></i>planned (dashed)</span>
+            <span>— input edge (static or per window)</span>
+            <span style="color:var(--accent)">- - label only, never input</span>
+            <span>every input edge also runs in reverse</span>
+          </div>
+          <figcaption><b>Figure 2.</b> The schema of one snapshot as <code>build.py</code> writes it. Solid types exist
+            today; dashed ones are planned (activity in S2, camera in the real building). The accent edge is what the
+            model must predict, so it never appears as input. Select a node or edge for its features and the reasoning
+            behind it.</figcaption>
+        </figure>
+        <h3 style="margin-top:28px">Left out on purpose</h3>
+        <table class="obj">
+          <thead>
+            <tr>
+              <th>Not in the graph</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>context node</td>
+              <td>Time, weather and occupancy are shared by every room; as space features they add the same information
+                without a hub node connected to everything.</td>
+            </tr>
+            <tr>
+              <td>preference node</td>
+              <td>Preference is Head A's output. As a node it would put the answer in the input.</td>
+            </tr>
+            <tr>
+              <td>co_present edge</td>
+              <td>Two <i>located_in</i> edges into one space already say it, and Head B attends over everyone in a room.
+                Re-added only if an ablation shows a gain.</td>
+            </tr>
+            <tr>
+              <td>press as input</td>
+              <td>A press inside the window is the label. Setpoints are read strictly before the window starts, so the
+                answer cannot leak in.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <h3>One house, one day</h3>
-      <div class="controls">
-        <label v-if="live">database
-          <select v-model="dbName" @change="loadDb"><option value="ui">ui.db (UI runs)</option><option value="sim">sim.db (scripted)</option></select>
-        </label>
-        <label>house<select v-model.number="b" @change="loadHouse"><option v-for="h in buildingList" :key="h.id" :value="h.id">{{ houseLabel(h) }}</option></select></label>
-        <label>day<select v-model.number="day" @change="loadHouse"><option v-for="d in dayList" :key="d" :value="d">{{ dayLabel(d) }}</option></select></label>
-      </div>
-      <figure>
-        <div class="figure-frame"><svg id="tl-svg" class="viz" role="img" aria-label="Room temperatures, setpoints, presses and presence for one house over one day"></svg></div>
-        <div class="legend" v-if="tl">
-          <span v-for="r in Object.keys(tl.temps)" :key="r"><i class="sw" :style="{ background: roomColor(r) }"></i>{{ r }}</span>
-          <span>— temperature</span><span>- - setpoint</span><span>● named press</span><span>○ anonymous press</span><span>× turned off</span><span>··· μ* hidden preference</span>
+      <!-- §4 live demo: knobs + run + meta + house timeline -->
+      <div class="demo" v-else-if="s.id === 'simulator'">
+        <p class="error" v-if="demoError">{{ demoError }}</p>
+        <h3>Knobs</h3>
+        <p class="note" v-if="!live">Static export: knobs are read-only. Run <code>python server.py</code> locally to
+          simulate.</p>
+        <p class="note" v-else>Exploration only: every number in a paper comes from a scripted run (D16). A run writes
+          <code>ui.db</code>, never <code>sim.db</code>.
+        </p>
+        <div class="knobs" v-if="knobEdits">
+          <fieldset class="grp" v-for="[g, ks] in KNOB_GROUPS" :key="g">
+            <legend>{{ g }}</legend>
+            <div v-for="k in ks" :key="k" :class="['knob', k in changedKnobs && 'changed']" tabindex="0"
+              @dblclick="$event.target.type !== 'number' && resetOne(k)">
+              <div class="parts">
+                <div class="part" v-for="p in parts(k)" :key="p.i">
+                  <input v-if="styleOf(k) === 'fader'" type="range" class="fader" :min="KNOB_INFO[k][1]"
+                    :max="KNOB_INFO[k][2]" :step="(KNOB_INFO[k][2] - KNOB_INFO[k][1]) / 100" :value="get(k, p.i)"
+                    :disabled="!live" :aria-label="k + ' ' + p.label" @input="set(k, p.i, +$event.target.value)">
+                  <svg v-else :class="['dial', styleOf(k)]" viewBox="-26 -26 52 52" role="slider" tabindex="0"
+                    :aria-label="k" :aria-valuenow="get(k, p.i)" @pointerdown="dialDrag($event, k, p.i)"
+                    @keydown.up.prevent="nudge(k, p.i, 1)" @keydown.down.prevent="nudge(k, p.i, -1)"
+                    :style="{ cursor: live ? 'ns-resize' : 'default' }">
+                    <line v-for="n in 11" :key="n" class="tick"
+                      :style="{ transform: 'rotate(' + (-135 + 27 * (n - 1)) + 'deg)' }" y1="-24" y2="-21" />
+                    <template v-if="styleOf(k) === 'knob'">
+                      <circle class="skirt" r="18" />
+                      <circle class="knurl" r="17" />
+                      <circle class="cap" r="12" />
+                    </template>
+                    <circle v-else class="skirt" r="15" />
+                    <line class="ptr" :style="{ transform: 'rotate(' + dialAngle(k, p.i) + 'deg)' }"
+                      :y1="styleOf(k) === 'knob' ? -13 : -5" :y2="styleOf(k) === 'knob' ? -18 : -13" />
+                  </svg>
+                  <span class="num"><input type="number" step="any" :value="get(k, p.i)" :disabled="!live"
+                      :aria-label="k + ' ' + p.label" @input="set(k, p.i, +$event.target.value)"><em>{{ KNOB_UNITS[k]
+                      }}</em></span>
+                  <small v-if="p.label">{{ p.label }}</small>
+                </div>
+              </div>
+              <span class="k"><i class="led"></i>{{ k }}</span>
+              <span class="kd" role="tooltip">{{ KNOB_INFO[k][0] }}<template v-if="live && k in changedKnobs">
+                  <i>Double-click to reset.</i></template></span>
+            </div>
+          </fieldset>
         </div>
-        <figcaption><b>Figure 3.</b> One simulated house over one day. Top: sensor temperature per room (solid), HVAC
-          setpoint (dashed), presses where they happened. Named presses come through Home Assistant; remote presses are
-          anonymous. Dotted lines show each person's hidden preference <i>μ*</i>, known only in simulation. Bottom: where each
-          person is (colour = room). Hover for values.</figcaption>
-        <details class="tbl" v-if="tl">
-          <summary>Presses as a table ({{ tl.presses.length }})</summary>
-          <table class="obj">
-            <thead><tr><th>time</th><th>room</th><th>who</th><th>value</th><th>actuator</th></tr></thead>
-            <tbody><tr v-for="(p, i) in tl.presses" :key="i">
-              <td>{{ p.ts.slice(11, 16) }}</td><td>{{ p.space }}</td><td>{{ p.user || 'anonymous' }}</td>
-              <td>{{ p.value == null ? 'off' : p.value + ' °C' }}</td><td><code>{{ p.actuator }}</code></td>
-            </tr></tbody>
-          </table>
-        </details>
-      </figure>
-    </div>
-
-    <!-- §5 live demo: graph snapshots through the day -->
-    <div class="demo" v-else-if="s.id === 'snapshots'">
-      <div class="controls">
-        <label>house<select v-model.number="b" @change="loadHouse"><option v-for="h in buildingList" :key="h.id" :value="h.id">{{ houseLabel(h) }}</option></select></label>
-        <label>day<select v-model.number="day" @change="loadHouse"><option v-for="d in dayList" :key="d" :value="d">{{ dayLabel(d) }}</option></select></label>
-        <button class="ghost" @click="togglePlay" :disabled="!gr || !gr.windows.length">{{ playing ? 'Pause' : 'Play' }}</button>
-        <label class="grow" v-if="gr && gr.windows.length">window {{ wi + 1 }} of {{ gr.windows.length }} · {{ labelledCount }} with labels
-          <input type="range" min="0" :max="gr.windows.length - 1" v-model.number="wi" aria-label="Time window">
-        </label>
-        <span class="mono" v-if="win">{{ windowLabel }}</span>
-      </div>
-      <figure>
-        <div class="figure-frame"><svg id="gr-svg" class="viz" role="img" aria-label="Heterogeneous graph snapshot of one house for one 15-minute window"></svg></div>
-        <p class="note" v-if="gr && !gr.windows.length">Nobody home this day: no snapshots.</p>
-        <div class="legend">
-          <span>▭ space</span><span>◇ sensor</span><span>■ device on · □ off</span><span>○ actuator</span>
-          <span style="color:var(--accent)">● present user</span><span style="color:var(--accent)">— located_in (input)</span>
-          <span style="color:var(--accent)">- - Head A label</span><span style="color:var(--accent)">▢ Head B label</span><span>- - adjacent spaces</span>
+        <div class="controls">
+          <label>houses<input type="number" min="1" :max="caps.houses" v-model.number="runArgs.houses"
+              :disabled="!live"></label>
+          <label>days<input type="number" min="1" :max="caps.days" v-model.number="runArgs.days"
+              :disabled="!live"></label>
+          <label>seed<input type="number" v-model.number="runArgs.seed" :disabled="!live"></label>
+          <button class="act" @click="run" :disabled="!live || running">{{ running ? 'Running…' : 'Run' }}</button>
+          <button class="ghost" @click="resetKnobs" :disabled="!live || !Object.keys(changedKnobs).length">Reset
+            knobs</button>
         </div>
-        <figcaption><b>Figure 4.</b> The graph the GNN receives, one 15-minute window at a time, read back from
-          <code>build.py</code>'s <code>HeteroData</code>. Input: sensor readings and setpoints at the window start, and who is
-          present (<i>located_in</i>, with minutes since arrival). Presses inside the window are never input: they become
-          labels, Head A per named person and device, Head B per device. Press Play to watch a day.</figcaption>
-      </figure>
-    </div>
+        <div class="metabox" v-if="meta" aria-live="polite">
+          <span>database <b>{{ dbName }}.db</b></span>
+          <span v-if="meta.note">{{ meta.note }}</span>
+          <template v-else>
+            <span>seed <b>{{ meta.seed }}</b></span>
+            <span>size <b>{{ meta.n_houses }} houses × {{ meta.n_days }} days</b></span>
+            <span>code <b>{{ meta.git_hash.slice(0, 7) }}{{ meta.git_dirty === 'true' ? ' + uncommitted' : ''
+                }}</b></span>
+            <span>created <b>{{ meta.created }}</b></span>
+            <span>overrides <b>{{ metaOverrides || 'none' }}</b></span>
+          </template>
+        </div>
 
-    <div class="pending" v-else>{{ s.pending }}</div>
-  </section>
+        <h3>One house, one day</h3>
+        <div class="controls">
+          <label v-if="live">database
+            <select v-model="dbName" @change="loadDb">
+              <option value="ui">ui.db (UI runs)</option>
+              <option value="sim">sim.db (scripted)</option>
+            </select>
+          </label>
+          <label>house<select v-model.number="b" @change="loadHouse">
+              <option v-for="h in buildingList" :key="h.id" :value="h.id">{{ houseLabel(h) }}</option>
+            </select></label>
+          <label>day<select v-model.number="day" @change="loadHouse">
+              <option v-for="d in dayList" :key="d" :value="d">{{ dayLabel(d) }}</option>
+            </select></label>
+        </div>
+        <figure>
+          <div class="figure-frame"><svg id="tl-svg" class="viz" role="img"
+              aria-label="Room temperatures, setpoints, presses and presence for one house over one day"></svg></div>
+          <div class="legend" v-if="tl">
+            <span v-for="r in Object.keys(tl.temps)" :key="r"><i class="sw" :style="{ background: roomColor(r) }"></i>{{
+              r }}</span>
+            <span>— temperature</span><span>- - setpoint</span><span>● named press</span><span>○ anonymous
+              press</span><span>× turned off</span><span>··· μ* hidden preference</span>
+          </div>
+          <figcaption><b>Figure 3.</b> One simulated house over one day. Top: sensor temperature per room (solid), HVAC
+            setpoint (dashed), presses where they happened. Named presses come through Home Assistant; remote presses
+            are
+            anonymous. Dotted lines show each person's hidden preference <i>μ*</i>, known only in simulation. Bottom:
+            where each
+            person is (colour = room). Hover for values.</figcaption>
+          <details class="tbl" v-if="tl">
+            <summary>Presses as a table ({{ tl.presses.length }})</summary>
+            <table class="obj">
+              <thead>
+                <tr>
+                  <th>time</th>
+                  <th>room</th>
+                  <th>who</th>
+                  <th>value</th>
+                  <th>actuator</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(p, i) in tl.presses" :key="i">
+                  <td>{{ p.ts.slice(11, 16) }}</td>
+                  <td>{{ p.space }}</td>
+                  <td>{{ p.user || 'anonymous' }}</td>
+                  <td>{{ p.value == null ? 'off' : p.value + ' °C' }}</td>
+                  <td><code>{{ p.actuator }}</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </details>
+        </figure>
+      </div>
 
-  <footer>
-    <span>Decisions: <code>docs/adr/</code> · Requirements: <code>docs/superpowers/specs/</code></span>
-    <span>Draft — sections are filled as each phase is built.</span>
-  </footer>
-</div>
-<div id="tip" class="tip" hidden></div>
+      <!-- §5 live demo: graph snapshots through the day -->
+      <div class="demo" v-else-if="s.id === 'snapshots'">
+        <div class="controls">
+          <label>house<select v-model.number="b" @change="loadHouse">
+              <option v-for="h in buildingList" :key="h.id" :value="h.id">{{ houseLabel(h) }}</option>
+            </select></label>
+          <label>day<select v-model.number="day" @change="loadHouse">
+              <option v-for="d in dayList" :key="d" :value="d">{{ dayLabel(d) }}</option>
+            </select></label>
+          <button class="ghost" @click="togglePlay" :disabled="!gr || !gr.windows.length">{{ playing ? 'Pause' : 'Play'
+            }}</button>
+          <label class="grow" v-if="gr && gr.windows.length">window {{ wi + 1 }} of {{ gr.windows.length }} · {{
+            labelledCount }} with labels
+            <input type="range" min="0" :max="gr.windows.length - 1" v-model.number="wi" aria-label="Time window">
+          </label>
+          <span class="mono" v-if="win">{{ windowLabel }}</span>
+        </div>
+        <figure>
+          <div class="figure-frame"><svg id="gr-svg" class="viz" role="img"
+              aria-label="Heterogeneous graph snapshot of one house for one 15-minute window"></svg></div>
+          <p class="note" v-if="gr && !gr.windows.length">Nobody home this day: no snapshots.</p>
+          <div class="legend">
+            <span>▭ space</span><span>◇ sensor</span><span>■ device on · □ off</span><span>○ actuator</span>
+            <span style="color:var(--accent)">● present user</span><span style="color:var(--accent)">— located_in
+              (input)</span>
+            <span style="color:var(--accent)">- - Head A label</span><span style="color:var(--accent)">▢ Head B
+              label</span><span>- - adjacent spaces</span>
+          </div>
+          <figcaption><b>Figure 4.</b> The graph the GNN receives, one 15-minute window at a time, read back from
+            <code>build.py</code>'s <code>HeteroData</code>. Input: sensor readings and setpoints at the window start,
+            and who is
+            present (<i>located_in</i>, with minutes since arrival). Presses inside the window are never input: they
+            become
+            labels, Head A per named person and device, Head B per device. Press Play to watch a day.
+          </figcaption>
+        </figure>
+      </div>
 
-<script>
-const GH = "https://github.com/rafaeldpsilva/graph-phd/issues/";
-const issue = n => [`#${n}`, GH + n];
+      <div class="pending" v-else>{{ s.pending }}</div>
+    </section>
 
-const nodes = [
-  { id: "sim", title: "Simulator", x: 20, y: 64, w: 200, h: 150, status: "done",
-    lines: ["100 houses × 60 days", "population → itinerary", "→ physics → presses", "knobs.py · seeded"],
-    where: "sim.py, population.py, knobs.py · version S1",
-    how: ["Generates houses (Portuguese typology T0–T3), households with roles, and people with routines that vary day to day.",
+    <footer>
+      <span>Decisions: <code>docs/adr/</code> · Requirements: <code>docs/superpowers/specs/</code></span>
+      <span>Draft — sections are filled as each phase is built.</span>
+    </footer>
+  </div>
+  <div id="tip" class="tip" hidden></div>
+
+  <script>
+    const GH = "https://github.com/rafaeldpsilva/graph-phd/issues/";
+    const issue = n => [`#${n}`, GH + n];
+
+    const nodes = [
+      {
+        id: "sim", title: "Simulator", x: 20, y: 64, w: 200, h: 150, status: "done",
+        lines: ["100 houses × 60 days", "population → itinerary", "→ physics → presses", "knobs.py · seeded"],
+        where: "sim.py, population.py, knobs.py · version S1",
+        how: ["Generates houses (Portuguese typology T0–T3), households with roles, and people with routines that vary day to day.",
           "Each minute: presence, first-order thermal physics per room, noisy sensors, and presses when a person is uncomfortable.",
           "Every draw comes from one seeded RNG per house, so runs are reproducible and adding a house leaves the others unchanged."],
-    why: ["Real buildings never reveal what people actually prefer. In simulation the preference <i>μ*</i> is known, so recovery can be measured.",
+        why: ["Real buildings never reveal what people actually prefer. In simulation the preference <i>μ*</i> is known, so recovery can be measured.",
           "Every structure (profile signal, activity shift) is a knob; at zero it is the control condition."],
-    refs: [issue(28), issue(7), issue(8), ["Requirements", "../docs/superpowers/specs/2026-11-02-simulator-requirements.md"]] },
-  { id: "real", title: "Real buildings", x: 20, y: 260, w: 200, h: 150, status: "plan",
-    lines: ["house first, then office", "Home Assistant · remote", "mmWave + BLE presence", "comfort votes"],
-    where: "Issues #15–#18 · deployment spec",
-    how: ["Home Assistant logs device state and named presses; shared remotes stay anonymous.",
+        refs: [issue(28), issue(7), issue(8), ["Requirements", "../docs/superpowers/specs/2026-11-02-simulator-requirements.md"]]
+      },
+      {
+        id: "real", title: "Real buildings", x: 20, y: 260, w: 200, h: 150, status: "plan",
+        lines: ["house first, then office", "Home Assistant · remote", "mmWave + BLE presence", "comfort votes"],
+        where: "Issues #15–#18 · deployment spec",
+        how: ["Home Assistant logs device state and named presses; shared remotes stay anonymous.",
           "Room presence fuses mmWave people counts with BLE identity, with a confidence value.",
           "An adapter writes the same SQLite log format as the simulator."],
-    why: ["The model must work where truth is unknown; real logs also calibrate the simulator's knobs.",
+        why: ["The model must work where truth is unknown; real logs also calibrate the simulator's knobs.",
           "Comfort votes are used for evaluation only, never as training labels."],
-    refs: [issue(15), issue(16), issue(17), issue(18), issue(6)] },
-  { id: "truth", title: "Hidden truth", x: 268, y: 64, w: 196, h: 90, status: "done", dashed: true,
-    lines: ["μ*, tolerance, style"],
-    where: "sim.db · table truth",
-    how: ["Stored in its own table: preference <i>μ*</i>, tolerance, press probability, HVAC usage style."],
-    why: ["Read by evaluation only. A check fails if any truth column appears in the events table (leakage guard)."],
-    refs: [] },
-  { id: "logs", title: "Logs · SQLite", x: 268, y: 190, w: 196, h: 150, status: "done",
-    lines: ["static layout", "events: presence,", "sensor, interaction,", "device state"],
-    where: "sim.db · ISO 8601 timestamps",
-    how: ["Static tables describe each building: spaces, adjacency, devices, actuators, sensors.",
+        refs: [issue(15), issue(16), issue(17), issue(18), issue(6)]
+      },
+      {
+        id: "truth", title: "Hidden truth", x: 268, y: 64, w: 196, h: 90, status: "done", dashed: true,
+        lines: ["μ*, tolerance, style"],
+        where: "sim.db · table truth",
+        how: ["Stored in its own table: preference <i>μ*</i>, tolerance, press probability, HVAC usage style."],
+        why: ["Read by evaluation only. A check fails if any truth column appears in the events table (leakage guard)."],
+        refs: []
+      },
+      {
+        id: "logs", title: "Logs · SQLite", x: 268, y: 190, w: 196, h: 150, status: "done",
+        lines: ["static layout", "events: presence,", "sensor, interaction,", "device state"],
+        where: "sim.db · ISO 8601 timestamps",
+        how: ["Static tables describe each building: spaces, adjacency, devices, actuators, sensors.",
           "One events table: presence, sensor readings, interactions (named or anonymous), device state."],
-    why: ["The common format is the boundary between worlds: the builder reads logs only, so no simulator-only signal can reach the model.",
+        why: ["The common format is the boundary between worlds: the builder reads logs only, so no simulator-only signal can reach the model.",
           "Invariants I1–I9 check every run, for example that a named press comes from someone present in that room."],
-    refs: [] },
-  { id: "builder", title: "Builder", x: 512, y: 64, w: 200, h: 110, status: "wip",
-    lines: ["15-min windows →", "HeteroData snapshots"],
-    where: "build.py",
-    how: ["For each window: building state at its start (readings, setpoints) and who is present become the graph.",
+        refs: []
+      },
+      {
+        id: "builder", title: "Builder", x: 512, y: 64, w: 200, h: 110, status: "wip",
+        lines: ["15-min windows →", "HeteroData snapshots"],
+        where: "build.py",
+        how: ["For each window: building state at its start (readings, setpoints) and who is present become the graph.",
           "Presses inside the window are removed from the input and become labels.",
           "A global user index gives each person one embedding row across all buildings."],
-    why: ["A press is the answer, so it can never be an input edge.",
+        why: ["A press is the answer, so it can never be an input edge.",
           "Long-term preference lives in user embeddings shared across snapshots; each snapshot holds only the present."],
-    refs: [issue(9)] },
-  { id: "splits", title: "Splits", x: 512, y: 230, w: 200, h: 90, status: "plan",
-    lines: ["time + user / context", "+ building holdouts"],
-    where: "Issue #10 · ADR pending (#3)",
-    how: ["Train on earlier weeks, test on later ones.",
+        refs: [issue(9)]
+      },
+      {
+        id: "splits", title: "Splits", x: 512, y: 230, w: 200, h: 90, status: "plan",
+        lines: ["time + user / context", "+ building holdouts"],
+        where: "Issue #10 · ADR pending (#3)",
+        how: ["Train on earlier weeks, test on later ones.",
           "Held-out people (new person in a known house, or in a new house) and held-out contexts sit on top of the time split."],
-    why: ["Random splits leak the future.",
+        why: ["Random splits leak the future.",
           "Cold start and unseen context are the generalisation tests of objective O2."],
-    refs: [issue(10), issue(3), issue(2)] },
-  { id: "encoder", title: "Encoder", x: 760, y: 64, w: 190, h: 110, status: "wip",
-    lines: ["hetero GNN (GATv2)", "user ID emb. + profile"],
-    where: "encode.py",
-    how: ["<code>to_hetero</code> over GATv2 convolutions, 2–3 layers, edge features in message passing.",
+        refs: [issue(10), issue(3), issue(2)]
+      },
+      {
+        id: "encoder", title: "Encoder", x: 760, y: 64, w: 190, h: 110, status: "wip",
+        lines: ["hetero GNN (GATv2)", "user ID emb. + profile"],
+        where: "encode.py",
+        how: ["<code>to_hetero</code> over GATv2 convolutions, 2–3 layers, edge features in message passing.",
           "User input: learned ID embedding plus profile; unknown people share one “unknown” row."],
-    why: ["Different node types need different parameters; GATv2 lets edge features (time since arrival, presence confidence) shape messages."],
-    refs: [issue(4)] },
-  { id: "headA", title: "Head A", x: 760, y: 200, w: 190, h: 90, status: "plan",
-    lines: ["preference (μ, σ)", "Gaussian NLL"],
-    where: "Issue #11 · ADR 0001",
-    how: ["For each person and the device in their room: MLP over person, device and room embeddings → <i>μ</i>, log <i>σ</i>.",
+        why: ["Different node types need different parameters; GATv2 lets edge features (time since arrival, presence confidence) shape messages."],
+        refs: [issue(4)]
+      },
+      {
+        id: "headA", title: "Head A", x: 760, y: 200, w: 190, h: 90, status: "plan",
+        lines: ["preference (μ, σ)", "Gaussian NLL"],
+        where: "Issue #11 · ADR 0001",
+        how: ["For each person and the device in their room: MLP over person, device and room embeddings → <i>μ</i>, log <i>σ</i>.",
           "Trained on named presses with Gaussian negative log-likelihood."],
-    why: ["Setpoints are numbers, so regression; <i>σ</i> says how sure the model is.",
+        why: ["Setpoints are numbers, so regression; <i>σ</i> says how sure the model is.",
           "Unknown people get a large <i>σ</i>, so they count less downstream."],
-    refs: [issue(11), ["ADR 0001", "../docs/adr/0001-preference-as-regression.md"]] },
-  { id: "headB", title: "Head B", x: 760, y: 320, w: 190, h: 90, status: "plan",
-    lines: ["α-weighted μ per device", "MSE vs override"],
-    where: "Issue #12",
-    how: ["Attention over the people in a room: <i>α</i> from person, activity, room and 1/<i>σ</i>; setpoint = Σ <i>α μ</i>.",
+        refs: [issue(11), ["ADR 0001", "../docs/adr/0001-preference-as-regression.md"]]
+      },
+      {
+        id: "headB", title: "Head B", x: 760, y: 320, w: 190, h: 90, status: "plan",
+        lines: ["α-weighted μ per device", "MSE vs override"],
+        where: "Issue #12",
+        how: ["Attention over the people in a room: <i>α</i> from person, activity, room and 1/<i>σ</i>; setpoint = Σ <i>α μ</i>.",
           "Trained on the last press per device, named or anonymous."],
-    why: ["Anonymous presses still say what the room settled on.",
+        why: ["Anonymous presses still say what the room settled on.",
           "<i>α</i> is the explanation: who counted, and how much.",
           "Compared with uniform mean, 1/σ-weighted mean, min-max discomfort and role priority."],
-    refs: [issue(12)] },
-  { id: "eval", title: "Evaluation", x: 1000, y: 64, w: 180, h: 110, status: "plan",
-    lines: ["MAE vs μ*, calibration", "k-shot, fairness, energy"],
-    where: "Issue #13 · frozen v1 metric table",
-    how: ["Recovery error against hidden <i>μ*</i>, calibration of <i>σ</i>, k-shot curve for new people, cumulative fairness, energy proxy, overrides per day."],
-    why: ["One metric table, frozen at v1, against which every extension paper is measured."],
-    refs: [issue(13), issue(32)] },
-  { id: "decide", title: "Decision", x: 1000, y: 320, w: 180, h: 90, status: "plan",
-    lines: ["act if |s − current| > θ", "proactive control"],
-    where: "Inference rule",
-    how: ["If Head B's setpoint differs from the current one by more than a threshold, the system acts."],
-    why: ["Success is measured as fewer manual overrides in closed-loop simulation."],
-    refs: [] },
-];
+        refs: [issue(12)]
+      },
+      {
+        id: "eval", title: "Evaluation", x: 1000, y: 64, w: 180, h: 110, status: "plan",
+        lines: ["MAE vs μ*, calibration", "k-shot, fairness, energy"],
+        where: "Issue #13 · frozen v1 metric table",
+        how: ["Recovery error against hidden <i>μ*</i>, calibration of <i>σ</i>, k-shot curve for new people, cumulative fairness, energy proxy, overrides per day."],
+        why: ["One metric table, frozen at v1, against which every extension paper is measured."],
+        refs: [issue(13), issue(32)]
+      },
+      {
+        id: "decide", title: "Decision", x: 1000, y: 320, w: 180, h: 90, status: "plan",
+        lines: ["act if |s − current| > θ", "proactive control"],
+        where: "Inference rule",
+        how: ["If Head B's setpoint differs from the current one by more than a threshold, the system acts."],
+        why: ["Success is measured as fewer manual overrides in closed-loop simulation."],
+        refs: []
+      },
+    ];
 
-const edges = [
-  { id: "sim-truth", d: "M220,109 L264,109", kind: "dashed" },
-  { id: "sim-logs", d: "M220,180 L244,180 L244,240 L264,240" },
-  { id: "real-logs", d: "M220,335 L244,335 L244,290 L264,290", label: "same log format", lx: 366, ly: 362 },
-  { id: "logs-builder", d: "M464,265 L488,265 L488,119 L508,119" },
-  { id: "builder-splits", d: "M612,174 L612,226" },
-  { id: "builder-encoder", d: "M712,119 L756,119" },
-  { id: "encoder-headA", d: "M855,174 L855,196" },
-  { id: "headA-headB", d: "M855,290 L855,316", label: "μ, σ", lx: 864, ly: 308, anchor: "start" },
-  { id: "encoder-headB", d: "M760,150 L742,150 L742,365 L756,365" },
-  { id: "headA-eval", d: "M950,245 L975,245 L975,119 L996,119" },
-  { id: "headB-eval", d: "M950,340 L985,340 L985,150 L996,150" },
-  { id: "headB-decide", d: "M950,375 L996,375" },
-  { id: "truth-eval", d: "M366,64 L366,46 L1090,46 L1090,60", kind: "dashed", label: "evaluation only", lx: 728, ly: 40 },
-  { id: "loop", d: "M1090,410 L1090,440 L120,440 L120,414", kind: "loop", label: "setpoint → HVAC · closed loop", lx: 605, ly: 432 },
-];
+    const edges = [
+      { id: "sim-truth", d: "M220,109 L264,109", kind: "dashed" },
+      { id: "sim-logs", d: "M220,180 L244,180 L244,240 L264,240" },
+      { id: "real-logs", d: "M220,335 L244,335 L244,290 L264,290", label: "same log format", lx: 366, ly: 362 },
+      { id: "logs-builder", d: "M464,265 L488,265 L488,119 L508,119" },
+      { id: "builder-splits", d: "M612,174 L612,226" },
+      { id: "builder-encoder", d: "M712,119 L756,119" },
+      { id: "encoder-headA", d: "M855,174 L855,196" },
+      { id: "headA-headB", d: "M855,290 L855,316", label: "μ, σ", lx: 864, ly: 308, anchor: "start" },
+      { id: "encoder-headB", d: "M760,150 L742,150 L742,365 L756,365" },
+      { id: "headA-eval", d: "M950,245 L975,245 L975,119 L996,119" },
+      { id: "headB-eval", d: "M950,340 L985,340 L985,150 L996,150" },
+      { id: "headB-decide", d: "M950,375 L996,375" },
+      { id: "truth-eval", d: "M366,64 L366,46 L1090,46 L1090,60", kind: "dashed", label: "evaluation only", lx: 728, ly: 40 },
+      { id: "loop", d: "M1090,410 L1090,440 L120,440 L120,414", kind: "loop", label: "setpoint → HVAC · closed loop", lx: 605, ly: 432 },
+    ];
 
-// ================================================================ §3 graph schema
-// Mirrors build.py (feature lists SPACE_FEATURES, SENSOR_FEATURES, ...). Planned types from the design spec §2.
-const BUILD = "build.py";
-const schemaNodes = [
-  { id: "user", title: "user", x: 40, y: 190, status: "done", lines: ["learned ID embedding", "present people only"],
-    where: `${BUILD} · data['user'].n_id → encode.py embedding`,
-    how: ["No input features: each node carries <code>n_id</code>, its row in a global user index across all buildings, and the encoder looks up a learned 32-d embedding.",
+    // ================================================================ §3 graph schema
+    // Mirrors build.py (feature lists SPACE_FEATURES, SENSOR_FEATURES, ...). Planned types from the design spec §2.
+    const BUILD = "build.py";
+    const schemaNodes = [
+      {
+        id: "user", title: "user", x: 40, y: 190, status: "done", lines: ["learned ID embedding", "present people only"],
+        where: `${BUILD} · data['user'].n_id → encode.py embedding`,
+        how: ["No input features: each node carries <code>n_id</code>, its row in a global user index across all buildings, and the encoder looks up a learned 32-d embedding.",
           "Only people present at some moment of the window become nodes.",
           "Planned: a profile (role) beside the embedding, and one shared “unknown” row for people the model has never seen."],
-    why: ["Long-term preference must outlive a 15-minute window; the embedding is the memory, shared by every snapshot of that person.",
-          "The index is global so that person 0 of house 3 and person 0 of house 7 never share a row (D19)."] },
-  { id: "space", title: "space", x: 470, y: 190, status: "done", lines: ["area · occupancy", "hour of day (sin, cos)"],
-    where: `${BUILD} · SPACE_FEATURES`,
-    how: ["Features: <code>area_m2</code>, <code>occupancy</code> (people present in the window), <code>hour_sin</code>, <code>hour_cos</code>.",
+        why: ["Long-term preference must outlive a 15-minute window; the embedding is the memory, shared by every snapshot of that person.",
+          "The index is global so that person 0 of house 3 and person 0 of house 7 never share a row (D19)."]
+      },
+      {
+        id: "space", title: "space", x: 470, y: 190, status: "done", lines: ["area · occupancy", "hour of day (sin, cos)"],
+        where: `${BUILD} · SPACE_FEATURES`,
+        how: ["Features: <code>area_m2</code>, <code>occupancy</code> (people present in the window), <code>hour_sin</code>, <code>hour_cos</code>.",
           "Planned: floor, orientation, window ratio, weekday, outdoor temperature."],
-    why: ["The room is where people, sensors and devices meet: every path between a person and a device passes through it.",
-          "Hour as sine and cosine so that 23:45 and 00:00 are neighbours."] },
-  { id: "sensor", title: "sensor", x: 860, y: 30, status: "done", lines: ["reading · missing flag"],
-    where: `${BUILD} · SENSOR_FEATURES`,
-    how: ["Features: <code>reading</code> (last value at or before the window start) and <code>missing</code> (1 if none yet).",
+        why: ["The room is where people, sensors and devices meet: every path between a person and a device passes through it.",
+          "Hour as sine and cosine so that 23:45 and 00:00 are neighbours."]
+      },
+      {
+        id: "sensor", title: "sensor", x: 860, y: 30, status: "done", lines: ["reading · missing flag"],
+        where: `${BUILD} · SENSOR_FEATURES`,
+        how: ["Features: <code>reading</code> (last value at or before the window start) and <code>missing</code> (1 if none yet).",
           "Planned: type one-hot for humidity, CO₂, lux and presence sensors."],
-    why: ["A missing reading is not a reading of zero; the flag lets the model tell them apart."] },
-  { id: "camera", title: "camera", x: 860, y: 150, status: "plan", lines: ["VLM fields", "real building only"],
-    where: "Design spec §2 · real deployment",
-    how: ["Structured fields from a vision-language model: people count, activity, clothing, posture, windows open."],
-    why: ["Its own node type, not a sensor: PyG needs one feature size per type, and camera features differ from a scalar reading."] },
-  { id: "device", title: "device", x: 860, y: 290, status: "done", lines: ["setpoint · on/off", "Head B label y"],
-    where: `${BUILD} · DEVICE_FEATURES · data['device'].y`,
-    how: ["Features: <code>setpoint</code> and <code>is_on</code>, from the last state change strictly before the window starts.",
+        why: ["A missing reading is not a reading of zero; the flag lets the model tell them apart."]
+      },
+      {
+        id: "camera", title: "camera", x: 860, y: 150, status: "plan", lines: ["VLM fields", "real building only"],
+        where: "Design spec §2 · real deployment",
+        how: ["Structured fields from a vision-language model: people count, activity, clothing, posture, windows open."],
+        why: ["Its own node type, not a sensor: PyG needs one feature size per type, and camera features differ from a scalar reading."]
+      },
+      {
+        id: "device", title: "device", x: 860, y: 290, status: "done", lines: ["setpoint · on/off", "Head B label y"],
+        where: `${BUILD} · DEVICE_FEATURES · data['device'].y`,
+        how: ["Features: <code>setpoint</code> and <code>is_on</code>, from the last state change strictly before the window starts.",
           "Label: <code>y</code> = the last press on that device inside the window, named or anonymous; <code>y_mask</code> marks devices that have one."],
-    why: ["A setpoint changed inside the window is the answer, so the input must stop before it.",
-          "Anonymous presses still say what the room settled on: Head B can learn from them even though Head A cannot."] },
-  { id: "actuator", title: "actuator", x: 860, y: 430, status: "done", lines: ["remote · HA · button"],
-    where: `${BUILD} · ACTUATOR_FEATURES`,
-    how: ["Features: one-hot over a fixed list <code>[remote, HA, button]</code>."],
-    why: ["The interface decides whether a press is attributable: Home Assistant knows who pressed, a shared remote does not.",
-          "A fixed list keeps the feature width constant across buildings."] },
-  { id: "activity", title: "activity", x: 300, y: 30, status: "plan", lines: ["an instance, not a category", "S2 (#7)"],
-    where: "Design spec §2 · simulator S2",
-    how: ["One node per ongoing activity instance (this dinner, this meeting), with type and duration so far."],
-    why: ["Separate instances do not blur together in message passing, and the shared instance groups the people taking part for Head B."] },
-];
-const schemaEdges = [
-  { id: "located_in", title: "user → located_in → space", status: "done", d: "M240,232 L466,232", label: "located_in", lx: 353, ly: 224,
-    where: `${BUILD} · per window · edge_attr = LOCATED_IN_FEATURES`,
-    how: ["One edge per person and room they are in during the window.",
+        why: ["A setpoint changed inside the window is the answer, so the input must stop before it.",
+          "Anonymous presses still say what the room settled on: Head B can learn from them even though Head A cannot."]
+      },
+      {
+        id: "actuator", title: "actuator", x: 860, y: 430, status: "done", lines: ["remote · HA · button"],
+        where: `${BUILD} · ACTUATOR_FEATURES`,
+        how: ["Features: one-hot over a fixed list <code>[remote, HA, button]</code>."],
+        why: ["The interface decides whether a press is attributable: Home Assistant knows who pressed, a shared remote does not.",
+          "A fixed list keeps the feature width constant across buildings."]
+      },
+      {
+        id: "activity", title: "activity", x: 300, y: 30, status: "plan", lines: ["an instance, not a category", "S2 (#7)"],
+        where: "Design spec §2 · simulator S2",
+        how: ["One node per ongoing activity instance (this dinner, this meeting), with type and duration so far."],
+        why: ["Separate instances do not blur together in message passing, and the shared instance groups the people taking part for Head B."]
+      },
+    ];
+    const schemaEdges = [
+      {
+        id: "located_in", title: "user → located_in → space", status: "done", d: "M240,232 L466,232", label: "located_in", lx: 353, ly: 224,
+        where: `${BUILD} · per window · edge_attr = LOCATED_IN_FEATURES`,
+        how: ["One edge per person and room they are in during the window.",
           "Edge feature: <code>min_since_arrival</code>. Planned: presence <code>confidence</code> (noisy sensing, S3) and clothing."],
-    why: ["The only link between a person and the building: everything a person hears arrives through it.",
-          "Time since arrival matters: someone just in from a cold walk feels differently (B12)."] },
-  { id: "adjacent_to", title: "space → adjacent_to → space", status: "done", d: "M520,274 C520,345 620,345 620,278", label: "adjacent_to", lx: 570, ly: 362,
-    where: `${BUILD} · static`,
-    how: ["Static edges between rooms. For now every room is adjacent to the living room; real floor plans come later."],
-    why: ["Heat and people move between neighbouring rooms (E2), so a room's state is informative for the next one."] },
-  { id: "sensor_in", title: "sensor → in → space", status: "done", d: "M856,72 L760,72 L760,205 L674,205", label: "in", lx: 808, ly: 64,
-    where: `${BUILD} · static`, how: ["Static: each sensor belongs to one room."],
-    why: ["Brings the measured temperature to the room, and from there to the people in it."] },
-  { id: "camera_in", title: "camera → in → space", status: "plan", kind: "dashed", d: "M856,192 L780,192 L780,225 L674,225", label: "in", lx: 818, ly: 184,
-    where: "Design spec §2", how: ["Static, like a sensor."], why: ["Same path as a sensor, different features."] },
-  { id: "installed_in", title: "device → installed_in → space", status: "done", d: "M856,332 L800,332 L800,250 L674,250", label: "installed_in", lx: 792, ly: 300, anchor: "end",
-    where: `${BUILD} · static`, how: ["Static: each HVAC unit serves one room."],
-    why: ["Ties the thing being controlled to the people who feel it."] },
-  { id: "acts_on", title: "actuator → acts_on → device", status: "done", d: "M960,430 L960,378", label: "acts_on", lx: 968, ly: 410, anchor: "start",
-    where: `${BUILD} · static`, how: ["Static: each interface (remote, HA) controls one device."],
-    why: ["Lets the device know which kinds of interface reach it, and so how often its presses are attributable."] },
-  { id: "executes", title: "user → executes → activity", status: "plan", kind: "dashed", d: "M140,190 L140,72 L296,72", label: "executes", lx: 148, ly: 130, anchor: "start",
-    where: "Design spec §2 · S2", how: ["Per window, with the person's role (host, guest; presenter, attendee)."],
-    why: ["What a person is doing shifts their comfort (metabolic rate)."] },
-  { id: "performed_in", title: "activity → performed_in → space", status: "plan", kind: "dashed", d: "M400,114 L400,150 L540,150 L540,186", label: "performed_in", lx: 408, ly: 142, anchor: "start",
-    where: "Design spec §2 · S2", how: ["Per window: where the activity takes place."], why: ["Puts the activity's effect into the room it happens in."] },
-  { id: "prefers", title: "user → prefers → device", status: "done", kind: "label", d: "M140,274 L140,410 L820,410 L820,350 L856,350", label: "prefers · label only, never input", lx: 480, ly: 430,
-    where: `${BUILD} · edge_label_index, edge_label · no edge_index`,
-    how: ["Built from named presses inside the window: the last value per (person, device).",
+        why: ["The only link between a person and the building: everything a person hears arrives through it.",
+          "Time since arrival matters: someone just in from a cold walk feels differently (B12)."]
+      },
+      {
+        id: "adjacent_to", title: "space → adjacent_to → space", status: "done", d: "M520,274 C520,345 620,345 620,278", label: "adjacent_to", lx: 570, ly: 362,
+        where: `${BUILD} · static`,
+        how: ["Static edges between rooms. For now every room is adjacent to the living room; real floor plans come later."],
+        why: ["Heat and people move between neighbouring rooms (E2), so a room's state is informative for the next one."]
+      },
+      {
+        id: "sensor_in", title: "sensor → in → space", status: "done", d: "M856,72 L760,72 L760,205 L674,205", label: "in", lx: 808, ly: 64,
+        where: `${BUILD} · static`, how: ["Static: each sensor belongs to one room."],
+        why: ["Brings the measured temperature to the room, and from there to the people in it."]
+      },
+      {
+        id: "camera_in", title: "camera → in → space", status: "plan", kind: "dashed", d: "M856,192 L780,192 L780,225 L674,225", label: "in", lx: 818, ly: 184,
+        where: "Design spec §2", how: ["Static, like a sensor."], why: ["Same path as a sensor, different features."]
+      },
+      {
+        id: "installed_in", title: "device → installed_in → space", status: "done", d: "M856,332 L800,332 L800,250 L674,250", label: "installed_in", lx: 792, ly: 300, anchor: "end",
+        where: `${BUILD} · static`, how: ["Static: each HVAC unit serves one room."],
+        why: ["Ties the thing being controlled to the people who feel it."]
+      },
+      {
+        id: "acts_on", title: "actuator → acts_on → device", status: "done", d: "M960,430 L960,378", label: "acts_on", lx: 968, ly: 410, anchor: "start",
+        where: `${BUILD} · static`, how: ["Static: each interface (remote, HA) controls one device."],
+        why: ["Lets the device know which kinds of interface reach it, and so how often its presses are attributable."]
+      },
+      {
+        id: "executes", title: "user → executes → activity", status: "plan", kind: "dashed", d: "M140,190 L140,72 L296,72", label: "executes", lx: 148, ly: 130, anchor: "start",
+        where: "Design spec §2 · S2", how: ["Per window, with the person's role (host, guest; presenter, attendee)."],
+        why: ["What a person is doing shifts their comfort (metabolic rate)."]
+      },
+      {
+        id: "performed_in", title: "activity → performed_in → space", status: "plan", kind: "dashed", d: "M400,114 L400,150 L540,150 L540,186", label: "performed_in", lx: 408, ly: 142, anchor: "start",
+        where: "Design spec §2 · S2", how: ["Per window: where the activity takes place."], why: ["Puts the activity's effect into the room it happens in."]
+      },
+      {
+        id: "prefers", title: "user → prefers → device", status: "done", kind: "label", d: "M140,274 L140,410 L820,410 L820,350 L856,350", label: "prefers · label only, never input", lx: 480, ly: 430,
+        where: `${BUILD} · edge_label_index, edge_label · no edge_index`,
+        how: ["Built from named presses inside the window: the last value per (person, device).",
           "Stored as <code>edge_label_index</code> and <code>edge_label</code> only. Without an <code>edge_index</code>, <code>ToUndirected</code> skips it and no message ever flows along it."],
-    why: ["It is Head A's target. If it were an input edge the model would read the answer instead of learning it.",
-          "Only named presses count, because only they say whose preference it is."] },
-];
+        why: ["It is Head A's target. If it were an input edge the model would read the answer instead of learning it.",
+          "Only named presses count, because only they say whose preference it is."]
+      },
+    ];
 
-// ================================================================ live demos (#30)
-// Data: live mode asks server.py; static mode (GitHub Pages) reads the files
-// `python server.py --export` wrote: timeline?b=0&day=1 -> data/timeline_b0_day1.json (D33).
-const api = {
-  live: false,
-  async get(route, q = {}) {
-    const url = this.live ? `/api/${route}?${new URLSearchParams(q)}`
-      : `data/${[route, ...Object.entries(q).filter(([k]) => k !== "db").map(([k, v]) => k + v)].join("_")}.json`;
-    const r = await fetch(url);
-    const body = await r.json().catch(() => ({ error: `${r.status}: ${url}` }));
-    if (!r.ok) throw new Error(body.error || `${r.status}: ${url}`);
-    return body;
-  },
-};
+    // ================================================================ live demos (#30)
+    // Data: live mode asks server.py; static mode (GitHub Pages) reads the files
+    // `python server.py --export` wrote: timeline?b=0&day=1 -> data/timeline_b0_day1.json (D33).
+    const api = {
+      live: false,
+      async get(route, q = {}) {
+        const url = this.live ? `/api/${route}?${new URLSearchParams(q)}`
+          : `data/${[route, ...Object.entries(q).filter(([k]) => k !== "db").map(([k, v]) => k + v)].join("_")}.json`;
+        const r = await fetch(url);
+        const body = await r.json().catch(() => ({ error: `${r.status}: ${url}` }));
+        if (!r.ok) throw new Error(body.error || `${r.status}: ${url}`);
+        return body;
+      },
+    };
 
-// Colour follows the room, never its rank (living and studio never coexist: one slot).
-// Bathroom has no AC: neutral grey, so colour is spent only on rooms a person can control.
-const ROOM_SLOT = { living: 1, studio: 1, kitchen: 2, bedroom1: 3, bedroom2: 4, bedroom3: 5 };
-const roomColor = r => r in ROOM_SLOT ? `var(--r${ROOM_SLOT[r]})` : "var(--plan)";
-const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-const clock = d3.timeFormat("%H:%M");
-const fmtC = v => v == null ? "–" : `${v.toFixed(1)}°`;
-const motion = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Colour follows the room, never its rank (living and studio never coexist: one slot).
+    // Bathroom has no AC: neutral grey, so colour is spent only on rooms a person can control.
+    const ROOM_SLOT = { living: 1, studio: 1, kitchen: 2, bedroom1: 3, bedroom2: 4, bedroom3: 5 };
+    const roomColor = r => r in ROOM_SLOT ? `var(--r${ROOM_SLOT[r]})` : "var(--plan)";
+    const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    const clock = d3.timeFormat("%H:%M");
+    const fmtC = v => v == null ? "–" : `${v.toFixed(1)}°`;
+    const motion = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const tip = {
-  show(ev, html) {
-    const el = document.getElementById("tip");
-    el.innerHTML = html; el.hidden = false;
-    el.style.left = Math.min(ev.clientX + 14, innerWidth - 310) + "px";
-    el.style.top = (ev.clientY + 14) + "px";
-  },
-  hide() { document.getElementById("tip").hidden = true; },
-};
+    const tip = {
+      show(ev, html) {
+        const el = document.getElementById("tip");
+        el.innerHTML = html; el.hidden = false;
+        el.style.left = Math.min(ev.clientX + 14, innerWidth - 310) + "px";
+        el.style.top = (ev.clientY + 14) + "px";
+      },
+      hide() { document.getElementById("tip").hidden = true; },
+    };
 
-// ---- Figure 2: one house, one day. Temperatures on top, presence lanes below, one time axis.
-function drawTimeline(el, T) {
-  const W = 1060, L = 104, R = 100, top = 12, H1 = 240, lane = 24;
-  const lanesTop = top + H1 + 46, bottom = lanesTop + T.people.length * lane;
-  const svg = d3.select(el).attr("viewBox", `0 0 ${W} ${bottom + 28}`);
-  svg.selectAll("*").remove();
+    // ---- Figure 2: one house, one day. Temperatures on top, presence lanes below, one time axis.
+    function drawTimeline(el, T) {
+      const W = 1060, L = 104, R = 100, top = 12, H1 = 240, lane = 24;
+      const lanesTop = top + H1 + 46, bottom = lanesTop + T.people.length * lane;
+      const svg = d3.select(el).attr("viewBox", `0 0 ${W} ${bottom + 28}`);
+      svg.selectAll("*").remove();
 
-  const x = d3.scaleTime([new Date(T.from), new Date(T.to)], [L, W - R]);
-  const series = Object.entries(T.temps).map(([room, pts]) => ({ room, pts: pts.map(([t, v]) => [new Date(t), v]) }));
-  // setpoint as segments: value i holds until change i+1; null (off) draws nothing
-  const sp = Object.entries(T.setpoints).flatMap(([room, pts]) => pts.map(([t, v], i) =>
-    ({ room, v, a: new Date(t), b: new Date(i + 1 < pts.length ? pts[i + 1][0] : T.to) }))).filter(s => s.v != null);
-  const y = d3.scaleLinear(d3.extent([...series.flatMap(s => s.pts.map(p => p[1])), ...sp.map(s => s.v),
-    ...T.people.map(p => p.mu)]), [top + H1, top]).nice();
-  const xAxis = g => g.call(d3.axisBottom(x).ticks(d3.timeHour.every(3)).tickFormat(clock).tickSizeOuter(0));
+      const x = d3.scaleTime([new Date(T.from), new Date(T.to)], [L, W - R]);
+      const series = Object.entries(T.temps).map(([room, pts]) => ({ room, pts: pts.map(([t, v]) => [new Date(t), v]) }));
+      // setpoint as segments: value i holds until change i+1; null (off) draws nothing
+      const sp = Object.entries(T.setpoints).flatMap(([room, pts]) => pts.map(([t, v], i) =>
+        ({ room, v, a: new Date(t), b: new Date(i + 1 < pts.length ? pts[i + 1][0] : T.to) }))).filter(s => s.v != null);
+      const y = d3.scaleLinear(d3.extent([...series.flatMap(s => s.pts.map(p => p[1])), ...sp.map(s => s.v),
+      ...T.people.map(p => p.mu)]), [top + H1, top]).nice();
+      const xAxis = g => g.call(d3.axisBottom(x).ticks(d3.timeHour.every(3)).tickFormat(clock).tickSizeOuter(0));
 
-  svg.append("g").attr("class", "grid").selectAll("line").data(y.ticks(6)).join("line")
-    .attr("x1", L).attr("x2", W - R).attr("y1", y).attr("y2", y);
-  svg.append("g").attr("class", "axis").attr("transform", `translate(${L},0)`)
-    .call(d3.axisLeft(y).ticks(6).tickFormat(v => `${v} °C`).tickSize(0).tickPadding(8))
-    .call(g => g.select(".domain").remove());
-  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${top + H1})`).call(xAxis);
+      svg.append("g").attr("class", "grid").selectAll("line").data(y.ticks(6)).join("line")
+        .attr("x1", L).attr("x2", W - R).attr("y1", y).attr("y2", y);
+      svg.append("g").attr("class", "axis").attr("transform", `translate(${L},0)`)
+        .call(d3.axisLeft(y).ticks(6).tickFormat(v => `${v} °C`).tickSize(0).tickPadding(8))
+        .call(g => g.select(".domain").remove());
+      svg.append("g").attr("class", "axis").attr("transform", `translate(0,${top + H1})`).call(xAxis);
 
-  const mu = svg.append("g").attr("class", "mu");  // hidden truth: shown to explain, never input (I8)
-  mu.selectAll("line").data(T.people).join("line").attr("x1", L).attr("x2", W - R)
-    .attr("y1", p => y(p.mu)).attr("y2", p => y(p.mu));
-  mu.selectAll("text").data(T.people).join("text").attr("x", L + 6).attr("y", p => y(p.mu) - 4).text(p => `μ* ${p.user}`);
+      const mu = svg.append("g").attr("class", "mu");  // hidden truth: shown to explain, never input (I8)
+      mu.selectAll("line").data(T.people).join("line").attr("x1", L).attr("x2", W - R)
+        .attr("y1", p => y(p.mu)).attr("y2", p => y(p.mu));
+      mu.selectAll("text").data(T.people).join("text").attr("x", L + 6).attr("y", p => y(p.mu) - 4).text(p => `μ* ${p.user}`);
 
-  svg.append("g").selectAll("line").data(sp).join("line").attr("class", "setpoint").style("stroke", s => roomColor(s.room))
-    .attr("x1", s => x(s.a)).attr("x2", s => x(s.b)).attr("y1", s => y(s.v)).attr("y2", s => y(s.v));
-  const line = d3.line().x(p => x(p[0])).y(p => y(p[1]));
-  svg.append("g").selectAll("path").data(series).join("path").attr("class", "temp")
-    .style("stroke", s => roomColor(s.room)).attr("d", s => line(s.pts));
+      svg.append("g").selectAll("line").data(sp).join("line").attr("class", "setpoint").style("stroke", s => roomColor(s.room))
+        .attr("x1", s => x(s.a)).attr("x2", s => x(s.b)).attr("y1", s => y(s.v)).attr("y2", s => y(s.v));
+      const line = d3.line().x(p => x(p[0])).y(p => y(p[1]));
+      svg.append("g").selectAll("path").data(series).join("path").attr("class", "temp")
+        .style("stroke", s => roomColor(s.room)).attr("d", s => line(s.pts));
 
-  // direct labels at the line ends, pushed apart so they never overlap
-  const ends = series.map(s => ({ room: s.room, y: y(s.pts.at(-1)[1]) })).sort((a, b) => a.y - b.y);
-  ends.forEach((e, i) => { if (i && e.y - ends[i - 1].y < 14) e.y = ends[i - 1].y + 14; });
-  const lab = svg.append("g").selectAll("g").data(ends).join("g").attr("transform", e => `translate(${W - R + 8},${e.y})`);
-  lab.append("line").attr("class", "swatch").attr("x2", 12).style("stroke", e => roomColor(e.room));
-  lab.append("text").attr("class", "ink").attr("x", 18).attr("dy", "0.32em").text(e => e.room);
+      // direct labels at the line ends, pushed apart so they never overlap
+      const ends = series.map(s => ({ room: s.room, y: y(s.pts.at(-1)[1]) })).sort((a, b) => a.y - b.y);
+      ends.forEach((e, i) => { if (i && e.y - ends[i - 1].y < 14) e.y = ends[i - 1].y + 14; });
+      const lab = svg.append("g").selectAll("g").data(ends).join("g").attr("transform", e => `translate(${W - R + 8},${e.y})`);
+      lab.append("line").attr("class", "swatch").attr("x2", 12).style("stroke", e => roomColor(e.room));
+      lab.append("text").attr("class", "ink").attr("x", 18).attr("dy", "0.32em").text(e => e.room);
 
-  // presence lanes (drawn before the hover layer; the hover layer reports who is where)
-  svg.append("text").attr("class", "lane-head").attr("x", L - 8).attr("y", lanesTop - 8).attr("text-anchor", "end").text("presence");
-  svg.append("g").selectAll("text").data(T.people).join("text").attr("class", "lane-label")
-    .attr("x", L - 8).attr("y", (p, i) => lanesTop + i * lane + lane / 2).attr("dy", "0.32em").attr("text-anchor", "end").text(p => p.user);
-  const lanes = Object.fromEntries(T.people.map((p, i) => [p.user, i]));
-  svg.append("g").selectAll("rect").data(T.stays).join("rect").attr("class", "stay").attr("rx", 2)
-    .attr("x", s => x(new Date(s.from))).attr("width", s => Math.max(1, x(new Date(s.to)) - x(new Date(s.from))))
-    .attr("y", s => lanesTop + lanes[s.user] * lane + 3).attr("height", lane - 6).style("fill", s => roomColor(s.space));
-  svg.append("g").attr("class", "axis").attr("transform", `translate(0,${bottom + 2})`).call(xAxis);
+      // presence lanes (drawn before the hover layer; the hover layer reports who is where)
+      svg.append("text").attr("class", "lane-head").attr("x", L - 8).attr("y", lanesTop - 8).attr("text-anchor", "end").text("presence");
+      svg.append("g").selectAll("text").data(T.people).join("text").attr("class", "lane-label")
+        .attr("x", L - 8).attr("y", (p, i) => lanesTop + i * lane + lane / 2).attr("dy", "0.32em").attr("text-anchor", "end").text(p => p.user);
+      const lanes = Object.fromEntries(T.people.map((p, i) => [p.user, i]));
+      svg.append("g").selectAll("rect").data(T.stays).join("rect").attr("class", "stay").attr("rx", 2)
+        .attr("x", s => x(new Date(s.from))).attr("width", s => Math.max(1, x(new Date(s.to)) - x(new Date(s.from))))
+        .attr("y", s => lanesTop + lanes[s.user] * lane + 3).attr("height", lane - 6).style("fill", s => roomColor(s.space));
+      svg.append("g").attr("class", "axis").attr("transform", `translate(0,${bottom + 2})`).call(xAxis);
 
-  // hover: crosshair over both panels, temperature per room + who is where
-  const nearest = d3.bisector(p => p[0]).center;
-  const cross = svg.append("line").attr("class", "cross").attr("y1", top).attr("y2", bottom).style("display", "none");
-  svg.append("rect").attr("class", "hit").attr("x", L).attr("y", top).attr("width", W - R - L).attr("height", bottom - top)
-    .on("mousemove", ev => {
-      const t = x.invert(d3.pointer(ev)[0]);
-      cross.style("display", null).attr("x1", x(t)).attr("x2", x(t));
-      const rows = series.map(s => `<i class="sw" style="background:${roomColor(s.room)}"></i>${s.room} <b class="mono">${fmtC(s.pts[nearest(s.pts, t)][1])}</b>`);
-      const here = T.stays.filter(s => new Date(s.from) <= t && t < new Date(s.to)).map(s => `${s.user} in ${s.space}`);
-      tip.show(ev, `<b>${clock(t)}</b><br>${rows.join("<br>")}<br><i>${here.join(", ") || "nobody home"}</i>`);
-    })
-    .on("mouseleave", () => { cross.style("display", "none"); tip.hide(); });
+      // hover: crosshair over both panels, temperature per room + who is where
+      const nearest = d3.bisector(p => p[0]).center;
+      const cross = svg.append("line").attr("class", "cross").attr("y1", top).attr("y2", bottom).style("display", "none");
+      svg.append("rect").attr("class", "hit").attr("x", L).attr("y", top).attr("width", W - R - L).attr("height", bottom - top)
+        .on("mousemove", ev => {
+          const t = x.invert(d3.pointer(ev)[0]);
+          cross.style("display", null).attr("x1", x(t)).attr("x2", x(t));
+          const rows = series.map(s => `<i class="sw" style="background:${roomColor(s.room)}"></i>${s.room} <b class="mono">${fmtC(s.pts[nearest(s.pts, t)][1])}</b>`);
+          const here = T.stays.filter(s => new Date(s.from) <= t && t < new Date(s.to)).map(s => `${s.user} in ${s.space}`);
+          tip.show(ev, `<b>${clock(t)}</b><br>${rows.join("<br>")}<br><i>${here.join(", ") || "nobody home"}</i>`);
+        })
+        .on("mouseleave", () => { cross.style("display", "none"); tip.hide(); });
 
-  // presses on top: named = filled, anonymous = hollow, off = ×, placed at the room temperature
-  const byRoom = Object.fromEntries(series.map(s => [s.room, s.pts]));
-  const P = T.presses.map(p => {
-    const t = new Date(p.ts), pts = byRoom[p.space];
-    return { ...p, t, yv: p.value ?? pts[nearest(pts, t)][1] };
-  });
-  const m = svg.append("g").selectAll("g").data(P).join("g")
-    .attr("class", p => `press${p.user ? " named" : ""}`).style("color", p => roomColor(p.space))
-    .attr("transform", p => `translate(${x(p.t)},${y(p.yv)})`)
-    .on("mouseenter", (ev, p) => tip.show(ev, `<b>${clock(p.t)}</b> · ${p.space}<br>`
-      + (p.value == null ? "turned off" : `set <b class="mono">${p.value} °C</b>`)
-      + `<br>${p.user ? `by ${p.user} (named)` : "anonymous"} · <span class="mono">${p.actuator}</span>`))
-    .on("mouseleave", () => tip.hide());
-  m.append("circle").attr("class", "hitpad").attr("r", 12);
-  m.filter(p => p.value != null).append("circle").attr("class", "dot-m").attr("r", 4.5);
-  m.filter(p => p.value == null).append("path").attr("d", "M-4,-4L4,4M-4,4L4,-4");
-}
+      // presses on top: named = filled, anonymous = hollow, off = ×, placed at the room temperature
+      const byRoom = Object.fromEntries(series.map(s => [s.room, s.pts]));
+      const P = T.presses.map(p => {
+        const t = new Date(p.ts), pts = byRoom[p.space];
+        return { ...p, t, yv: p.value ?? pts[nearest(pts, t)][1] };
+      });
+      const m = svg.append("g").selectAll("g").data(P).join("g")
+        .attr("class", p => `press${p.user ? " named" : ""}`).style("color", p => roomColor(p.space))
+        .attr("transform", p => `translate(${x(p.t)},${y(p.yv)})`)
+        .on("mouseenter", (ev, p) => tip.show(ev, `<b>${clock(p.t)}</b> · ${p.space}<br>`
+          + (p.value == null ? "turned off" : `set <b class="mono">${p.value} °C</b>`)
+          + `<br>${p.user ? `by ${p.user} (named)` : "anonymous"} · <span class="mono">${p.actuator}</span>`))
+        .on("mouseleave", () => tip.hide());
+      m.append("circle").attr("class", "hitpad").attr("r", 12);
+      m.filter(p => p.value != null).append("circle").attr("class", "dot-m").attr("r", 4.5);
+      m.filter(p => p.value == null).append("path").attr("d", "M-4,-4L4,4M-4,4L4,-4");
+    }
 
-// ---- Figure 3: graph snapshots. Fixed layout per house so only the dynamic parts move.
-function drawGraph(el, st) {
-  const W = 1060, SY = 210, DY = 310, AY = 392, UY = 60;
-  const spaces = Object.keys(st.spaces);
-  const sx = Object.fromEntries(spaces.map((s, i) => [s, 60 + (i + 0.5) * (W - 120) / spaces.length]));
-  const pos = {};
-  for (const [k, s] of Object.entries(st.sensors)) pos[k] = [sx[s] - 30, DY];
-  for (const [k, s] of Object.entries(st.devices)) pos[k] = [sx[s] + 30, DY];
-  for (const [dev, list] of d3.group(Object.entries(st.actuators), ([, a]) => a.device))
-    list.forEach(([k], i) => pos[k] = [pos[dev][0] + (i - (list.length - 1) / 2) * 36, AY]);
+    // ---- Figure 3: graph snapshots. Fixed layout per house so only the dynamic parts move.
+    function drawGraph(el, st) {
+      const W = 1060, SY = 210, DY = 310, AY = 392, UY = 60;
+      const spaces = Object.keys(st.spaces);
+      const sx = Object.fromEntries(spaces.map((s, i) => [s, 60 + (i + 0.5) * (W - 120) / spaces.length]));
+      const pos = {};
+      for (const [k, s] of Object.entries(st.sensors)) pos[k] = [sx[s] - 30, DY];
+      for (const [k, s] of Object.entries(st.devices)) pos[k] = [sx[s] + 30, DY];
+      for (const [dev, list] of d3.group(Object.entries(st.actuators), ([, a]) => a.device))
+        list.forEach(([k], i) => pos[k] = [pos[dev][0] + (i - (list.length - 1) / 2) * 36, AY]);
 
-  const svg = d3.select(el).attr("viewBox", `0 0 ${W} 430`);
-  svg.selectAll("*").remove();
-  const E = svg.append("g");
-  E.selectAll(".adj").data(st.adjacency).join("path").attr("class", "adj").attr("d", ([a, b]) => {
-    const x1 = sx[a], x2 = sx[b], cy = Math.max(SY - 92, SY - 36 - Math.abs(x2 - x1) * 0.12);
-    return `M${x1},${SY - 22}Q${(x1 + x2) / 2},${cy} ${x2},${SY - 22}`;
-  });
-  const link = (data, x1, y1, x2, y2) => E.append("g").selectAll("line").data(data).join("line").attr("class", "e")
-    .attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
-  link(Object.entries(st.sensors), ([k]) => pos[k][0], DY - 9, ([, s]) => sx[s] - 18, SY + 22);
-  link(Object.entries(st.devices), ([k]) => pos[k][0], DY - 9, ([, s]) => sx[s] + 18, SY + 22);
-  link(Object.entries(st.actuators), ([k]) => pos[k][0], AY - 6, ([, a]) => pos[a.device][0], DY + 9);
+      const svg = d3.select(el).attr("viewBox", `0 0 ${W} 430`);
+      svg.selectAll("*").remove();
+      const E = svg.append("g");
+      E.selectAll(".adj").data(st.adjacency).join("path").attr("class", "adj").attr("d", ([a, b]) => {
+        const x1 = sx[a], x2 = sx[b], cy = Math.max(SY - 92, SY - 36 - Math.abs(x2 - x1) * 0.12);
+        return `M${x1},${SY - 22}Q${(x1 + x2) / 2},${cy} ${x2},${SY - 22}`;
+      });
+      const link = (data, x1, y1, x2, y2) => E.append("g").selectAll("line").data(data).join("line").attr("class", "e")
+        .attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2);
+      link(Object.entries(st.sensors), ([k]) => pos[k][0], DY - 9, ([, s]) => sx[s] - 18, SY + 22);
+      link(Object.entries(st.devices), ([k]) => pos[k][0], DY - 9, ([, s]) => sx[s] + 18, SY + 22);
+      link(Object.entries(st.actuators), ([k]) => pos[k][0], AY - 6, ([, a]) => pos[a.device][0], DY + 9);
 
-  const node = (data, cls) => svg.append("g").selectAll("g").data(data).join("g").attr("class", cls)
-    .attr("transform", d => `translate(${(pos[d[0]] || [sx[d[0]], SY]).join(",")})`);
-  const sp = node(spaces.map(s => [s]), "space");
-  sp.append("rect").attr("x", -52).attr("y", -22).attr("width", 104).attr("height", 44).attr("rx", 3);
-  sp.append("text").attr("class", "nm").attr("y", -3).attr("text-anchor", "middle").text(([s]) => s);
-  sp.append("text").attr("class", "val occ").attr("y", 13).attr("text-anchor", "middle");
-  const se = node(Object.entries(st.sensors), "sensor");
-  se.append("path").attr("d", "M0,-8L8,0L0,8L-8,0Z");
-  se.append("text").attr("class", "val").attr("y", 24).attr("text-anchor", "middle");
-  const dv = node(Object.entries(st.devices), "device");
-  dv.append("rect").attr("class", "ring").attr("x", -12).attr("y", -12).attr("width", 24).attr("height", 24).attr("rx", 2);
-  dv.append("rect").attr("class", "box").attr("x", -8).attr("y", -8).attr("width", 16).attr("height", 16);
-  dv.append("text").attr("class", "val").attr("y", 26).attr("text-anchor", "middle");
-  dv.append("text").attr("class", "yb").attr("y", 40).attr("text-anchor", "middle");
-  const ac = node(Object.entries(st.actuators), "actuator");
-  ac.append("circle").attr("r", 5);
-  ac.append("text").attr("class", "small").attr("y", 19).attr("text-anchor", "middle").text(([, a]) => a.type);
+      const node = (data, cls) => svg.append("g").selectAll("g").data(data).join("g").attr("class", cls)
+        .attr("transform", d => `translate(${(pos[d[0]] || [sx[d[0]], SY]).join(",")})`);
+      const sp = node(spaces.map(s => [s]), "space");
+      sp.append("rect").attr("x", -52).attr("y", -22).attr("width", 104).attr("height", 44).attr("rx", 3);
+      sp.append("text").attr("class", "nm").attr("y", -3).attr("text-anchor", "middle").text(([s]) => s);
+      sp.append("text").attr("class", "val occ").attr("y", 13).attr("text-anchor", "middle");
+      const se = node(Object.entries(st.sensors), "sensor");
+      se.append("path").attr("d", "M0,-8L8,0L0,8L-8,0Z");
+      se.append("text").attr("class", "val").attr("y", 24).attr("text-anchor", "middle");
+      const dv = node(Object.entries(st.devices), "device");
+      dv.append("rect").attr("class", "ring").attr("x", -12).attr("y", -12).attr("width", 24).attr("height", 24).attr("rx", 2);
+      dv.append("rect").attr("class", "box").attr("x", -8).attr("y", -8).attr("width", 16).attr("height", 16);
+      dv.append("text").attr("class", "val").attr("y", 26).attr("text-anchor", "middle");
+      dv.append("text").attr("class", "yb").attr("y", 40).attr("text-anchor", "middle");
+      const ac = node(Object.entries(st.actuators), "actuator");
+      ac.append("circle").attr("r", 5);
+      ac.append("text").attr("class", "small").attr("y", 19).attr("text-anchor", "middle").text(([, a]) => a.type);
 
-  svg.append("g").attr("class", "g-label");
-  svg.append("g").attr("class", "g-loc");
-  svg.append("g").attr("class", "g-users");
-  el.__layout = { sx, pos, SY, DY, UY };
-}
+      svg.append("g").attr("class", "g-label");
+      svg.append("g").attr("class", "g-loc");
+      svg.append("g").attr("class", "g-users");
+      el.__layout = { sx, pos, SY, DY, UY };
+    }
 
-function updateGraph(el, w, animate) {
-  const { sx, pos, SY, DY, UY } = el.__layout, svg = d3.select(el);
-  const dur = animate && motion() ? 350 : 0;
-  const bySpace = d3.group(w.users, u => u.space);
-  const U = w.users.map(u => {
-    const list = bySpace.get(u.space);
-    return { ...u, x: sx[u.space] + (list.indexOf(u) - (list.length - 1) / 2) * 34 };
-  });
-  const ux = Object.fromEntries(U.map(u => [u.user, u.x]));
+    function updateGraph(el, w, animate) {
+      const { sx, pos, SY, DY, UY } = el.__layout, svg = d3.select(el);
+      const dur = animate && motion() ? 350 : 0;
+      const bySpace = d3.group(w.users, u => u.space);
+      const U = w.users.map(u => {
+        const list = bySpace.get(u.space);
+        return { ...u, x: sx[u.space] + (list.indexOf(u) - (list.length - 1) / 2) * 34 };
+      });
+      const ux = Object.fromEntries(U.map(u => [u.user, u.x]));
 
-  svg.selectAll(".space .occ").text(([s]) => `occupancy ${bySpace.get(s)?.length || 0}`);
-  svg.selectAll(".sensor .val").text(([k]) => fmtC(w.readings[k]));
-  svg.selectAll(".device").classed("on", ([k]) => w.setpoints[k] != null).classed("lab", ([k]) => k in w.label_b);
-  svg.selectAll(".device .val").text(([k]) => w.setpoints[k] == null ? "off" : fmtC(w.setpoints[k]));
-  svg.selectAll(".device .yb").text(([k]) => k in w.label_b ? `B ${w.label_b[k]}` : "");
+      svg.selectAll(".space .occ").text(([s]) => `occupancy ${bySpace.get(s)?.length || 0}`);
+      svg.selectAll(".sensor .val").text(([k]) => fmtC(w.readings[k]));
+      svg.selectAll(".device").classed("on", ([k]) => w.setpoints[k] != null).classed("lab", ([k]) => k in w.label_b);
+      svg.selectAll(".device .val").text(([k]) => w.setpoints[k] == null ? "off" : fmtC(w.setpoints[k]));
+      svg.selectAll(".device .yb").text(([k]) => k in w.label_b ? `B ${w.label_b[k]}` : "");
 
-  const fade = s => s.transition().duration(dur).attr("opacity", 0).remove();
-  const loc = svg.select(".g-loc").selectAll("g").data(U, u => u.user)
-    .join(e => { const g = e.append("g").attr("opacity", 0); g.append("line"); g.append("text").attr("class", "small"); return g; },
-      u => u, fade);
-  loc.transition().duration(dur).attr("opacity", 1);
-  loc.select("line").transition().duration(dur)
-    .attr("x1", u => u.x).attr("y1", UY + 13).attr("x2", u => sx[u.space]).attr("y2", SY - 22);
-  loc.select("text").text(u => `${Math.round(u.min_since_arrival)}m`).transition().duration(dur)
-    .attr("x", u => u.x + 4).attr("y", UY + 32);  // beside its own user: shared rooms don't overlap
+      const fade = s => s.transition().duration(dur).attr("opacity", 0).remove();
+      const loc = svg.select(".g-loc").selectAll("g").data(U, u => u.user)
+        .join(e => { const g = e.append("g").attr("opacity", 0); g.append("line"); g.append("text").attr("class", "small"); return g; },
+          u => u, fade);
+      loc.transition().duration(dur).attr("opacity", 1);
+      loc.select("line").transition().duration(dur)
+        .attr("x1", u => u.x).attr("y1", UY + 13).attr("x2", u => sx[u.space]).attr("y2", SY - 22);
+      loc.select("text").text(u => `${Math.round(u.min_since_arrival)}m`).transition().duration(dur)
+        .attr("x", u => u.x + 4).attr("y", UY + 32);  // beside its own user: shared rooms don't overlap
 
-  const us = svg.select(".g-users").selectAll("g").data(U, u => u.user)
-    .join(e => {
-      const g = e.append("g").attr("class", "user").attr("opacity", 0).attr("transform", u => `translate(${u.x},${UY})`);
-      g.append("circle").attr("r", 13);
-      g.append("text").attr("y", -19).attr("text-anchor", "middle").text(u => u.user);
-      return g;
-    }, u => u, fade);
-  us.transition().duration(dur).attr("opacity", 1).attr("transform", u => `translate(${u.x},${UY})`);
+      const us = svg.select(".g-users").selectAll("g").data(U, u => u.user)
+        .join(e => {
+          const g = e.append("g").attr("class", "user").attr("opacity", 0).attr("transform", u => `translate(${u.x},${UY})`);
+          g.append("circle").attr("r", 13);
+          g.append("text").attr("y", -19).attr("text-anchor", "middle").text(u => u.user);
+          return g;
+        }, u => u, fade);
+      us.transition().duration(dur).attr("opacity", 1).attr("transform", u => `translate(${u.x},${UY})`);
 
-  // labels: what the model must predict for this window (never input)
-  const A = w.label_a.filter(([u]) => u in ux);
-  const la = svg.select(".g-label").selectAll("g").data(A).join(e => {
-    const g = e.append("g"); g.append("path").attr("class", "lab-a"); g.append("text").attr("class", "lab-a-t"); return g;
-  });
-  la.select("path").attr("d", ([u, d]) => {
-    const [x1, x2] = [ux[u], pos[d][0]];
-    return `M${x1},${UY + 13}C${x1},${SY + 40} ${x2 + 40},${DY - 70} ${x2 + 10},${DY - 12}`;
-  });
-  la.select("text").attr("x", ([, d]) => pos[d][0] + 16).attr("y", DY - 22).text(([, , v]) => `A ${v}`);
-}
+      // labels: what the model must predict for this window (never input)
+      const A = w.label_a.filter(([u]) => u in ux);
+      const la = svg.select(".g-label").selectAll("g").data(A).join(e => {
+        const g = e.append("g"); g.append("path").attr("class", "lab-a"); g.append("text").attr("class", "lab-a-t"); return g;
+      });
+      la.select("path").attr("d", ([u, d]) => {
+        const [x1, x2] = [ux[u], pos[d][0]];
+        return `M${x1},${UY + 13}C${x1},${SY + 40} ${x2 + 40},${DY - 70} ${x2 + 10},${DY - 12}`;
+      });
+      la.select("text").attr("x", ([, d]) => pos[d][0] + 16).attr("y", DY - 22).text(([, , v]) => `A ${v}`);
+    }
 
-createAppSafely();
-function createAppSafely() {
-  const { createApp } = Vue;
-  // [what it does and influences, dial min, dial max]; mirrors knobs.py
-  const KNOB_INFO = {
-    pref_mean: ["Average preferred temperature (°C). Shifts every setpoint people ask for.", 16, 28],
-    pref_sd: ["Spread of preferred temperature between people (°C). Larger = more disagreement in shared rooms.", 0, 4],
-    tol_range: ["Min / max tolerance (°C): how far from preference before someone is uncomfortable and presses.", 0, 3],
-    chronotype_sd: ["Minutes each person's whole routine is shifted from their type. Blurs when people are home.", 0, 120],
-    p_has_HA: ["Chance a house has Home Assistant, so named presses are possible.", 0, 1],
-    t_out: ["Outdoor temperature (°C), constant. The room drifts toward it when HVAC is off.", -10, 35],
-    t_start: ["Indoor temperature at minute 0 (°C).", 5, 30],
-    tau_loss: ["Minutes for a room to drift toward outdoors with HVAC off. Larger = better insulated.", 10, 480],
-    tau_hvac: ["Minutes for HVAC to move the room toward the setpoint. Smaller = stronger HVAC.", 2, 120],
-    sensor_every: ["Minutes between sensor readings. Sets the time resolution the model sees.", 1, 60],
-    sensor_noise: ["Std of reading noise (°C). Higher makes preference harder to recover.", 0, 2],
-    p_HA: ["When a house has HA: chance a press is logged via HA (named) rather than the remote (anonymous).", 0, 1],
-    cooldown: ["Minutes before the same person can press again. Limits press frequency.", 0, 240],
-    hvac_styles: ["Share of people per habit: leave_on (never turns off), off_on_leave, until_comfortable. Shapes the on/off press pattern.", 0, 1],
-    comfortable_band: ["°C: until_comfortable people turn HVAC off when within this of their preference.", 0, 2],
-  };
-  // synth-panel layout: group outline + widget per knob (knob = big knob, pot = small trim pot, fader = vertical slider)
-  const KNOB_GROUPS = [
-    ["Population", ["pref_mean", "pref_sd", "chronotype_sd", "tol_range", "p_has_HA"]],
-    ["Physics", ["t_out", "t_start", "tau_loss", "tau_hvac"]],
-    ["Sensing", ["sensor_every", "sensor_noise"]],
-    ["Behaviour", ["p_HA", "cooldown", "comfortable_band", "hvac_styles"]],
-  ];
-  const KNOB_UNITS = { pref_mean: "°C", pref_sd: "°C", tol_range: "°C", chronotype_sd: "min", t_out: "°C", t_start: "°C", tau_loss: "min",
-    tau_hvac: "min", sensor_every: "min", sensor_noise: "°C", cooldown: "min", comfortable_band: "°C" };  // probabilities and shares: unitless 0–1
-  const KNOB_STYLE = { p_has_HA: "fader", p_HA: "fader", hvac_styles: "fader", tol_range: "pot", sensor_every: "pot", cooldown: "pot", comfortable_band: "pot", sensor_noise: "pot" };
-  createApp({
-    data() {
-      return {
-        nodes, edges, sel: null, dark: false, navShow: false, cur: "",
-        schemaNodes, schemaEdges, schemaSel: null,
-        // live demos (#30)
-        live: false, demoError: "", running: false,
-        KNOB_INFO, KNOB_GROUPS, KNOB_UNITS, knobDefaults: null, knobEdits: null, caps: { houses: 10, days: 14 },
-        runArgs: { houses: 5, days: 7, seed: 0 },
-        dbName: "ui", meta: null, buildingList: [], b: 0, day: 0,
-        tl: null, gr: null, wi: 0, playing: null,
-        today: new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long" }),
-        statusText: { done: "built", wip: "in progress", plan: "planned" },
-        columns: [{ t: "sources", x: 120 }, { t: "common log", x: 366 }, { t: "graph", x: 612 }, { t: "model", x: 855 }, { t: "use", x: 1090 }],
-        extensions: [
-          { t: "Comfort–energy", issue: "#20 · #26", when: "Jun–Aug 2027" },
-          { t: "Fair conflicts", issue: "#21", when: "Sep–Oct 2027" },
-          { t: "Proactive occupancy", issue: "#22", when: "Nov–Dec 2027" },
-          { t: "Uncertain sensing", issue: "#23 · #6", when: "Jan–Feb 2028" },
-          { t: "Cross-system", issue: "#24", when: "Mar–Apr 2028" },
-          { t: "Sim-to-real", issue: "#25 · #19", when: "May–Jun 2028" },
-        ],
-        objectives: [
-          ["o1", "Learn each person's explicit preference as a setpoint with uncertainty (μ, σ)", "Head A"],
-          ["o2", "Infer unexpressed preference: new person, unseen context", "Head A + splits"],
-          ["o3", "Resolve conflicts in shared rooms", "Head B"],
-          ["o4", "Act before anyone reaches for a control", "Inference rule"],
-          ["o5", "Quantify uncertainty: σ is high for people the model does not know", "Head A"],
-          ["o6", "Explain decisions through attention weights α", "Head B"],
-        ],
-        sections: [
-          { id: "problem", n: "1", title: "Problem and goal" },
-          { id: "architecture", n: "2", title: "Concept architecture" },
-          { id: "graph", n: "3", title: "Why a graph",
-            lede: "People, rooms, devices and sensors as one heterogeneous graph per 15-minute window.",
-            pending: "Interactive graph schema: node and edge types, what is input and what is label." },
-          { id: "simulator", n: "4", title: "The simulator",
-            lede: "Hidden truth makes recovery measurable; every structure is a knob.",
-            pending: "Live demo: knobs, run, and one house's timeline — temperature, presence, presses. (#30)" },
-          { id: "snapshots", n: "5", title: "From logs to graphs",
-            lede: "Windows, labels, and why a press can never be an input.",
-            pending: "Live demo: graph snapshots evolving through a day. (#30)" },
-          { id: "model", n: "6", title: "Model",
-            lede: "Head A learns preference with uncertainty; Head B weighs people in a shared room.",
-            pending: "Filled when Head A and Head B are trained (#11, #12)." },
-          { id: "evaluation", n: "7", title: "Evaluation",
-            lede: "Time split with person, context and building holdouts.",
-            pending: "Splits diagram and metric definitions (#10, #13)." },
-          { id: "results", n: "8", title: "Results",
-            lede: "The frozen v1 metric table.",
-            pending: "Filled from the frozen v1 baseline (#13)." },
-          { id: "next", n: "9", title: "Next",
-            lede: "Real buildings and six extension papers, each measured against v1.",
-            pending: "Roadmap and real-deployment plan (#33)." },
-        ],
+    createAppSafely();
+    function createAppSafely() {
+      const { createApp } = Vue;
+      // [what it does and influences, dial min, dial max]; mirrors knobs.py
+      const KNOB_INFO = {
+        pref_mean: ["Average preferred temperature (°C). Shifts every setpoint people ask for.", 16, 28],
+        pref_sd: ["Spread of preferred temperature between people (°C). Larger = more disagreement in shared rooms.", 0, 4],
+        tol_range: ["Min / max tolerance (°C): how far from preference before someone is uncomfortable and presses.", 0, 3],
+        chronotype_sd: ["Minutes each person's whole routine is shifted from their type. Blurs when people are home.", 0, 120],
+        p_has_HA: ["Chance a house has Home Assistant, so named presses are possible.", 0, 1],
+        t_out: ["Outdoor temperature (°C), constant. The room drifts toward it when HVAC is off.", -10, 35],
+        t_start: ["Indoor temperature at minute 0 (°C).", 5, 30],
+        tau_loss: ["Minutes for a room to drift toward outdoors with HVAC off. Larger = better insulated.", 10, 480],
+        tau_hvac: ["Minutes for HVAC to move the room toward the setpoint. Smaller = stronger HVAC.", 2, 120],
+        sensor_every: ["Minutes between sensor readings. Sets the time resolution the model sees.", 1, 60],
+        sensor_noise: ["Std of reading noise (°C). Higher makes preference harder to recover.", 0, 2],
+        p_HA: ["When a house has HA: chance a press is logged via HA (named) rather than the remote (anonymous).", 0, 1],
+        cooldown: ["Minutes before the same person can press again. Limits press frequency.", 0, 240],
+        hvac_styles: ["Share of people per habit: leave_on (never turns off), off_on_leave, until_comfortable. Shapes the on/off press pattern.", 0, 1],
+        comfortable_band: ["°C: until_comfortable people turn HVAC off when within this of their preference.", 0, 2],
       };
-    },
-    computed: {
-      selected() { return this.nodes.find(n => n.id === this.sel); },
-      schemaSelected() { return [...this.schemaNodes, ...this.schemaEdges].find(n => n.id === this.schemaSel); },
-      changedKnobs() {
-        if (!this.knobEdits) return {};
-        return Object.fromEntries(Object.entries(this.knobEdits)
-          .filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(this.knobDefaults[k])));
-      },
-      metaOverrides() {  // knobs that produced the loaded db and differ from knobs.py now
-        const k = this.meta?.knobs;
-        if (!k || !this.knobDefaults) return "";
-        return Object.entries(k).filter(([n, v]) => n in this.knobDefaults && n !== "n_houses" && n !== "n_days"
-          && JSON.stringify(v) !== JSON.stringify(this.knobDefaults[n])).map(([n, v]) => `${n}=${JSON.stringify(v)}`).join(", ");
-      },
-      dayList() { return Array.from({ length: this.meta?.days_available || 0 }, (_, i) => i); },
-      win() { return this.gr?.windows[this.wi]; },
-      windowLabel() { return this.win ? `${hhmm(this.win.t0 % 1440)}–${hhmm((this.win.t0 + 15) % 1440)}` : ""; },
-      labelledCount() {
-        return this.gr ? this.gr.windows.filter(w => w.label_a.length || Object.keys(w.label_b).length).length : 0;
-      },
-    },
-    methods: {
-      roomColor,
-      houseLabel(h) { return `h${h.id} · ${h.typology} · ${h.household.replace("_", " ")} · ${h.people}p${h.has_HA ? " · HA" : ""}`; },
-      dayLabel(d) {
-        const start = new Date(this.meta?.knobs?.start || this.knobDefaults?.start || "2026-01-05");
-        return `day ${d} · ${new Date(start.getTime() + d * 864e5).toLocaleDateString("en-GB", { weekday: "short" })}`;
-      },
-      async initDemos() {
-        try {  // live if server.py answers, else the static export
-          const r = await fetch("/api/knobs");
-          api.live = this.live = r.ok && (r.headers.get("content-type") || "").includes("json");
-        } catch (e) { api.live = this.live = false; }
-        try {
-          const k = await api.get("knobs");
-          const { n_houses, n_days, start, ...rest } = k.knobs;  // size is a run argument; calendar is fixed
-          this.knobDefaults = { ...k.knobs };
-          this.knobEdits = structuredClone(rest);
-          this.caps = k.caps;
-          await this.loadDb();
-        } catch (e) {
-          this.demoError = this.live ? `Demo data unavailable: ${e.message}`
-            : "Demos need data: run python server.py and open http://127.0.0.1:8000 (or deploy the static export).";
-        }
-      },
-      async loadDb() {
-        try {
-          const q = { db: this.dbName };
-          [this.meta, this.buildingList] = await Promise.all([api.get("meta", q), api.get("buildings", q)]);
-          if (!this.buildingList.some(h => h.id === this.b)) this.b = this.buildingList[0]?.id ?? 0;
-          this.day = Math.min(this.day, this.meta.days_available - 1);
-          await this.loadHouse();
-        } catch (e) { this.demoError = e.message; this.meta = null; this.tl = this.gr = null; }
-      },
-      async loadHouse() {
-        if (this.playing) this.togglePlay();
-        this.demoError = "";
-        const q = { db: this.dbName, b: this.b, day: this.day };
-        try {
-          const [tl, gr] = await Promise.all([api.get("timeline", q), api.get("graph", q)]);
-          this.tl = Vue.markRaw(tl); this.gr = Vue.markRaw(gr);  // big read-only data: no reactive proxies
-        } catch (e) { this.demoError = e.message; return; }
-        const first = this.gr.windows.findIndex(w => w.label_a.length || Object.keys(w.label_b).length);
-        await this.$nextTick();
-        drawTimeline(document.getElementById("tl-svg"), this.tl);
-        const g = document.getElementById("gr-svg");
-        drawGraph(g, this.gr.static);
-        if (this.wi === Math.max(first, 0) && this.win) updateGraph(g, this.win, false);  // watcher won't fire
-        this.wi = Math.max(first, 0);
-      },
-      async run() {
-        this.running = true; this.demoError = "";
-        try {
-          const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...this.runArgs, knobs: this.changedKnobs }) });
-          const body = await r.json();
-          if (!r.ok) throw new Error(body.error);
-          this.dbName = "ui";
-          await this.loadDb();
-        } catch (e) { this.demoError = `Run failed: ${e.message}`; }
-        finally { this.running = false; }
-      },
-      resetOne(k) {
-        if (this.live) this.knobEdits[k] = JSON.parse(JSON.stringify(this.knobDefaults[k]));
-      },
-      resetKnobs() {
-        const { n_houses, n_days, start, ...rest } = this.knobDefaults;
-        this.knobEdits = JSON.parse(JSON.stringify(rest));  // not structuredClone: knobDefaults is a reactive proxy, which it rejects
-      },
-      togglePlay() {
-        if (this.playing) { clearInterval(this.playing); this.playing = null; return; }
-        if (this.wi >= this.gr.windows.length - 1) this.wi = 0;
-        this.playing = setInterval(() => {
-          if (this.wi >= this.gr.windows.length - 1) return this.togglePlay();
-          this.wi++;
-        }, 450);
-      },
-      styleOf: k => KNOB_STYLE[k] || "knob",
-      parts(k) {  // scalar -> one control; [lo, hi] -> two; {a, b, c} -> one per key
-        const v = this.knobEdits[k];
-        if (typeof v === "number") return [{ i: null, label: "" }];
-        return Object.keys(v).map(i => ({ i, label: Array.isArray(v) ? ["min", "max"][i] : i }));
-      },
-      get(k, i) { return i === null ? this.knobEdits[k] : this.knobEdits[k][i]; },
-      set(k, i, x) { if (i === null) this.knobEdits[k] = x; else this.knobEdits[k][i] = x; },
-      nudge(k, i, dir) {
-        if (!this.live) return;
-        const [, lo, hi] = KNOB_INFO[k], v = this.get(k, i) + dir * (hi - lo) / 100;
-        this.set(k, i, +Math.min(hi, Math.max(lo, v)).toFixed(3));
-      },
-      frac(k, i) {
-        const [, lo, hi] = KNOB_INFO[k];
-        return Math.min(1, Math.max(0, (this.get(k, i) - lo) / (hi - lo)));
-      },
-      dialAngle(k, i) {  // -135°..+135° across the knob's range
-        return -135 + 270 * this.frac(k, i);
-      },
-      dialDrag(e, k, i) {  // drag up/down to turn; 200px = full range
-        if (!this.live) return;
-        const [, lo, hi] = KNOB_INFO[k], y0 = e.clientY, v0 = this.get(k, i);
-        const move = ev => this.set(k, i, +Math.min(hi, Math.max(lo, v0 + (y0 - ev.clientY) / 200 * (hi - lo))).toFixed(3));
-        const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
-        addEventListener("pointermove", move); addEventListener("pointerup", up);
-      },
-      reveal(id) {
-        this.$nextTick(() => document.getElementById(id)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
-      },
-      toggleTheme() {
-        this.dark = !this.dark;
-        document.documentElement.dataset.theme = this.dark ? "dark" : "light";
-        try { localStorage.setItem("theme", document.documentElement.dataset.theme); } catch (e) {}
-      },
-    },
-    watch: {  // bring the description panel into view next to the clicked block
-      sel(v) { v && this.reveal("detail-arch"); }, schemaSel(v) { v && this.reveal("detail-schema"); },
-      wi() { if (this.win) updateGraph(document.getElementById("gr-svg"), this.win, true); },
-    },
-    mounted() {
-      let saved = null;
-      try { saved = localStorage.getItem("theme"); } catch (e) {}
-      if (saved) document.documentElement.dataset.theme = saved;
-      this.dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-      this.initDemos();
-      const onScroll = () => {
-        this.navShow = scrollY > document.querySelector("header.mast").offsetHeight - 100;
-        let cur = "";  // last section whose top has passed the upper third of the viewport
-        for (const x of this.sections) { const el = document.getElementById(x.id); if (el && el.getBoundingClientRect().top < innerHeight / 3) cur = x.id; }
-        this.cur = cur;
-      };
-      addEventListener("scroll", onScroll, { passive: true }); onScroll();
-    },
-  }).mount("#app");
-}
-</script>
-<style>[v-cloak] { display: none; }</style>
+      // synth-panel layout: group outline + widget per knob (knob = big knob, pot = small trim pot, fader = vertical slider)
+      const KNOB_GROUPS = [
+        ["Population", ["pref_mean", "pref_sd", "chronotype_sd", "tol_range", "p_has_HA"]],
+        ["Physics", ["t_out", "t_start", "tau_loss", "tau_hvac"]],
+        ["Sensing", ["sensor_every", "sensor_noise"]],
+        ["Behaviour", ["p_HA", "cooldown", "comfortable_band", "hvac_styles"]],
+      ];
+      const KNOB_UNITS = {
+        pref_mean: "°C", pref_sd: "°C", tol_range: "°C", chronotype_sd: "min", t_out: "°C", t_start: "°C", tau_loss: "min",
+        tau_hvac: "min", sensor_every: "min", sensor_noise: "°C", cooldown: "min", comfortable_band: "°C"
+      };  // probabilities and shares: unitless 0–1
+      const KNOB_STYLE = { p_has_HA: "fader", p_HA: "fader", hvac_styles: "fader", tol_range: "pot", sensor_every: "pot", cooldown: "pot", comfortable_band: "pot", sensor_noise: "pot" };
+      createApp({
+        data() {
+          return {
+            nodes, edges, sel: null, dark: false, navShow: false, cur: "",
+            schemaNodes, schemaEdges, schemaSel: null,
+            // live demos (#30)
+            live: false, demoError: "", running: false,
+            KNOB_INFO, KNOB_GROUPS, KNOB_UNITS, knobDefaults: null, knobEdits: null, caps: { houses: 10, days: 14 },
+            runArgs: { houses: 5, days: 7, seed: 0 },
+            dbName: "ui", meta: null, buildingList: [], b: 0, day: 0,
+            tl: null, gr: null, wi: 0, playing: null,
+            today: new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long" }),
+            statusText: { done: "built", wip: "in progress", plan: "planned" },
+            columns: [{ t: "sources", x: 120 }, { t: "common log", x: 366 }, { t: "graph", x: 612 }, { t: "model", x: 855 }, { t: "use", x: 1090 }],
+            extensions: [
+              { t: "Comfort–energy", issue: "#20 · #26", when: "Jun–Aug 2027" },
+              { t: "Fair conflicts", issue: "#21", when: "Sep–Oct 2027" },
+              { t: "Proactive occupancy", issue: "#22", when: "Nov–Dec 2027" },
+              { t: "Uncertain sensing", issue: "#23 · #6", when: "Jan–Feb 2028" },
+              { t: "Cross-system", issue: "#24", when: "Mar–Apr 2028" },
+              { t: "Sim-to-real", issue: "#25 · #19", when: "May–Jun 2028" },
+            ],
+            objectives: [
+              ["o1", "Learn each person's explicit preference as a setpoint with uncertainty (μ, σ)", "Head A"],
+              ["o2", "Infer unexpressed preference: new person, unseen context", "Head A + splits"],
+              ["o3", "Resolve conflicts in shared rooms", "Head B"],
+              ["o4", "Act before anyone reaches for a control", "Inference rule"],
+              ["o5", "Quantify uncertainty: σ is high for people the model does not know", "Head A"],
+              ["o6", "Explain decisions through attention weights α", "Head B"],
+            ],
+            sections: [
+              { id: "problem", n: "1", title: "Problem and goal" },
+              { id: "architecture", n: "2", title: "Concept architecture" },
+              {
+                id: "graph", n: "3", title: "Why a graph",
+                lede: "People, rooms, devices and sensors as one heterogeneous graph per 15-minute window.",
+                pending: "Interactive graph schema: node and edge types, what is input and what is label."
+              },
+              {
+                id: "simulator", n: "4", title: "The simulator",
+                lede: "Hidden truth makes recovery measurable; every structure is a knob.",
+                pending: "Live demo: knobs, run, and one house's timeline — temperature, presence, presses. (#30)"
+              },
+              {
+                id: "snapshots", n: "5", title: "From logs to graphs",
+                lede: "Windows, labels, and why a press can never be an input.",
+                pending: "Live demo: graph snapshots evolving through a day. (#30)"
+              },
+              {
+                id: "model", n: "6", title: "Model",
+                lede: "Head A learns preference with uncertainty; Head B weighs people in a shared room.",
+                pending: "Filled when Head A and Head B are trained (#11, #12)."
+              },
+              {
+                id: "evaluation", n: "7", title: "Evaluation",
+                lede: "Time split with person, context and building holdouts.",
+                pending: "Splits diagram and metric definitions (#10, #13)."
+              },
+              {
+                id: "results", n: "8", title: "Results",
+                lede: "The frozen v1 metric table.",
+                pending: "Filled from the frozen v1 baseline (#13)."
+              },
+              {
+                id: "next", n: "9", title: "Next",
+                lede: "Real buildings and six extension papers, each measured against v1.",
+                pending: "Roadmap and real-deployment plan (#33)."
+              },
+            ],
+          };
+        },
+        computed: {
+          selected() { return this.nodes.find(n => n.id === this.sel); },
+          schemaSelected() { return [...this.schemaNodes, ...this.schemaEdges].find(n => n.id === this.schemaSel); },
+          changedKnobs() {
+            if (!this.knobEdits) return {};
+            return Object.fromEntries(Object.entries(this.knobEdits)
+              .filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(this.knobDefaults[k])));
+          },
+          metaOverrides() {  // knobs that produced the loaded db and differ from knobs.py now
+            const k = this.meta?.knobs;
+            if (!k || !this.knobDefaults) return "";
+            return Object.entries(k).filter(([n, v]) => n in this.knobDefaults && n !== "n_houses" && n !== "n_days"
+              && JSON.stringify(v) !== JSON.stringify(this.knobDefaults[n])).map(([n, v]) => `${n}=${JSON.stringify(v)}`).join(", ");
+          },
+          dayList() { return Array.from({ length: this.meta?.days_available || 0 }, (_, i) => i); },
+          win() { return this.gr?.windows[this.wi]; },
+          windowLabel() { return this.win ? `${hhmm(this.win.t0 % 1440)}–${hhmm((this.win.t0 + 15) % 1440)}` : ""; },
+          labelledCount() {
+            return this.gr ? this.gr.windows.filter(w => w.label_a.length || Object.keys(w.label_b).length).length : 0;
+          },
+        },
+        methods: {
+          roomColor,
+          houseLabel(h) { return `h${h.id} · ${h.typology} · ${h.household.replace("_", " ")} · ${h.people}p${h.has_HA ? " · HA" : ""}`; },
+          dayLabel(d) {
+            const start = new Date(this.meta?.knobs?.start || this.knobDefaults?.start || "2026-01-05");
+            return `day ${d} · ${new Date(start.getTime() + d * 864e5).toLocaleDateString("en-GB", { weekday: "short" })}`;
+          },
+          async initDemos() {
+            try {  // live if server.py answers, else the static export
+              const r = await fetch("/api/knobs");
+              api.live = this.live = r.ok && (r.headers.get("content-type") || "").includes("json");
+            } catch (e) { api.live = this.live = false; }
+            try {
+              const k = await api.get("knobs");
+              const { n_houses, n_days, start, ...rest } = k.knobs;  // size is a run argument; calendar is fixed
+              this.knobDefaults = { ...k.knobs };
+              this.knobEdits = structuredClone(rest);
+              this.caps = k.caps;
+              await this.loadDb();
+            } catch (e) {
+              this.demoError = this.live ? `Demo data unavailable: ${e.message}`
+                : "Demos need data: run python server.py and open http://127.0.0.1:8000 (or deploy the static export).";
+            }
+          },
+          async loadDb() {
+            try {
+              const q = { db: this.dbName };
+              [this.meta, this.buildingList] = await Promise.all([api.get("meta", q), api.get("buildings", q)]);
+              if (!this.buildingList.some(h => h.id === this.b)) this.b = this.buildingList[0]?.id ?? 0;
+              this.day = Math.min(this.day, this.meta.days_available - 1);
+              await this.loadHouse();
+            } catch (e) { this.demoError = e.message; this.meta = null; this.tl = this.gr = null; }
+          },
+          async loadHouse() {
+            if (this.playing) this.togglePlay();
+            this.demoError = "";
+            const q = { db: this.dbName, b: this.b, day: this.day };
+            try {
+              const [tl, gr] = await Promise.all([api.get("timeline", q), api.get("graph", q)]);
+              this.tl = Vue.markRaw(tl); this.gr = Vue.markRaw(gr);  // big read-only data: no reactive proxies
+            } catch (e) { this.demoError = e.message; return; }
+            const first = this.gr.windows.findIndex(w => w.label_a.length || Object.keys(w.label_b).length);
+            await this.$nextTick();
+            drawTimeline(document.getElementById("tl-svg"), this.tl);
+            const g = document.getElementById("gr-svg");
+            drawGraph(g, this.gr.static);
+            if (this.wi === Math.max(first, 0) && this.win) updateGraph(g, this.win, false);  // watcher won't fire
+            this.wi = Math.max(first, 0);
+          },
+          async run() {
+            this.running = true; this.demoError = "";
+            try {
+              const r = await fetch("/api/run", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...this.runArgs, knobs: this.changedKnobs })
+              });
+              const body = await r.json();
+              if (!r.ok) throw new Error(body.error);
+              this.dbName = "ui";
+              await this.loadDb();
+            } catch (e) { this.demoError = `Run failed: ${e.message}`; }
+            finally { this.running = false; }
+          },
+          resetOne(k) {
+            if (this.live) this.knobEdits[k] = JSON.parse(JSON.stringify(this.knobDefaults[k]));
+          },
+          resetKnobs() {
+            const { n_houses, n_days, start, ...rest } = this.knobDefaults;
+            this.knobEdits = JSON.parse(JSON.stringify(rest));  // not structuredClone: knobDefaults is a reactive proxy, which it rejects
+          },
+          togglePlay() {
+            if (this.playing) { clearInterval(this.playing); this.playing = null; return; }
+            if (this.wi >= this.gr.windows.length - 1) this.wi = 0;
+            this.playing = setInterval(() => {
+              if (this.wi >= this.gr.windows.length - 1) return this.togglePlay();
+              this.wi++;
+            }, 450);
+          },
+          styleOf: k => KNOB_STYLE[k] || "knob",
+          parts(k) {  // scalar -> one control; [lo, hi] -> two; {a, b, c} -> one per key
+            const v = this.knobEdits[k];
+            if (typeof v === "number") return [{ i: null, label: "" }];
+            return Object.keys(v).map(i => ({ i, label: Array.isArray(v) ? ["min", "max"][i] : i }));
+          },
+          get(k, i) { return i === null ? this.knobEdits[k] : this.knobEdits[k][i]; },
+          set(k, i, x) { if (i === null) this.knobEdits[k] = x; else this.knobEdits[k][i] = x; },
+          nudge(k, i, dir) {
+            if (!this.live) return;
+            const [, lo, hi] = KNOB_INFO[k], v = this.get(k, i) + dir * (hi - lo) / 100;
+            this.set(k, i, +Math.min(hi, Math.max(lo, v)).toFixed(3));
+          },
+          frac(k, i) {
+            const [, lo, hi] = KNOB_INFO[k];
+            return Math.min(1, Math.max(0, (this.get(k, i) - lo) / (hi - lo)));
+          },
+          dialAngle(k, i) {  // -135°..+135° across the knob's range
+            return -135 + 270 * this.frac(k, i);
+          },
+          dialDrag(e, k, i) {  // drag up/down to turn; 200px = full range
+            if (!this.live) return;
+            const [, lo, hi] = KNOB_INFO[k], y0 = e.clientY, v0 = this.get(k, i);
+            const move = ev => this.set(k, i, +Math.min(hi, Math.max(lo, v0 + (y0 - ev.clientY) / 200 * (hi - lo))).toFixed(3));
+            const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
+            addEventListener("pointermove", move); addEventListener("pointerup", up);
+          },
+          reveal(id) {
+            this.$nextTick(() => document.getElementById(id)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+          },
+          toggleTheme() {
+            this.dark = !this.dark;
+            document.documentElement.dataset.theme = this.dark ? "dark" : "light";
+            try { localStorage.setItem("theme", document.documentElement.dataset.theme); } catch (e) { }
+          },
+        },
+        watch: {  // bring the description panel into view next to the clicked block
+          sel(v) { v && this.reveal("detail-arch"); }, schemaSel(v) { v && this.reveal("detail-schema"); },
+          wi() { if (this.win) updateGraph(document.getElementById("gr-svg"), this.win, true); },
+        },
+        mounted() {
+          let saved = null;
+          try { saved = localStorage.getItem("theme"); } catch (e) { }
+          if (saved) document.documentElement.dataset.theme = saved;
+          this.dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+          this.initDemos();
+          const onScroll = () => {
+            this.navShow = scrollY > document.querySelector("header.mast").offsetHeight - 100;
+            let cur = "";  // last section whose top has passed the upper third of the viewport
+            for (const x of this.sections) { const el = document.getElementById(x.id); if (el && el.getBoundingClientRect().top < innerHeight / 3) cur = x.id; }
+            this.cur = cur;
+          };
+          addEventListener("scroll", onScroll, { passive: true }); onScroll();
+        },
+      }).mount("#app");
+    }
+  </script>
+  <style>
+    [v-cloak] {
+      display: none;
+    }
+  </style>
 </body>
+
 </html>
