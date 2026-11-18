@@ -44,16 +44,17 @@ header.mast { padding: 56px 0 28px; border-bottom: 1px solid var(--ink); }
 h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.12; font-weight: 600; margin: 10px 0 14px; letter-spacing: -0.01em; }
 .byline { color: var(--muted); font-style: italic; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
-.toolbar button {
+.toolbar button, .theme {
   font: inherit; font-size: 14px; background: none; color: var(--ink); border: 1px solid var(--rule);
   padding: 4px 12px; border-radius: 2px; cursor: pointer;
 }
-.toolbar button:hover { border-color: var(--ink); }
+.toolbar button:hover, .theme:hover { border-color: var(--ink); }
+.theme { position: fixed; top: 12px; right: 16px; z-index: 10; background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
 .abstract { max-width: 760px; margin: 28px 0 0; font-size: 19px; }
 .abstract::first-letter { font-size: 3.1em; float: left; line-height: 0.9; padding: 6px 8px 0 0; font-weight: 600; color: var(--accent); }
 
 /* ---- contents */
-nav.toc { margin: 32px 0 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 24px; font-size: 15px; }
+nav.toc { margin: 32px 0 8px; display: flex; flex-direction: column; max-width: 520px; gap: 2px; font-size: 15px; }
 nav.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--rule); padding: 3px 0; display: flex; gap: 10px; }
 nav.toc a:hover { color: var(--accent); }
 nav.toc .n { font-family: var(--mono); color: var(--muted); font-size: 13px; padding-top: 2px; }
@@ -113,7 +114,7 @@ figcaption b { color: var(--ink); font-weight: 600; }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
 /* ---- detail panel */
-.detail { margin-top: 22px; border-top: 2px solid var(--accent); background: var(--card); padding: 22px 24px 18px; }
+.detail { margin-top: 0; scroll-margin-top: 56px; border-top: 2px solid var(--accent); background: var(--card); padding: 22px 24px 18px; }
 .detail h4 { margin: 0 0 4px; font-size: 24px; font-weight: 600; }
 .detail .meta { font-size: 14px; color: var(--muted); margin-bottom: 16px; display: flex; gap: 16px; flex-wrap: wrap; }
 .detail .meta b { font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: 0.04em; }
@@ -143,16 +144,46 @@ figcaption b { color: var(--ink); font-weight: 600; }
 }
 .controls input[type="number"] { width: 76px; }
 .controls input[type="range"] { padding: 0; accent-color: var(--accent); }
-.knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px 28px;
-  background: var(--card); border: 1px solid var(--rule); padding: 12px 16px; margin-bottom: 12px; }
-.knob { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px dotted var(--rule); padding: 3px 0; }
-.knob .k { font-family: var(--mono); font-size: 12.5px; }
-.knob.changed .k { color: var(--accent); font-weight: 500; }
-.knob .sub { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: end; }
-.knob input { width: 66px; }
-.knob .pair { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-.knob:has(small) { grid-column: 1 / -1; }
-.knob small { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+/* synth-style controls: silkscreen labels, ticked knobs, trim pots, faders, change LEDs */
+.knobs { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
+.grp { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end; background: var(--card);
+  border: 1.5px solid var(--ink); border-radius: 6px; padding: 8px 14px 12px; margin: 0; min-width: 0; }
+.grp legend { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding: 0 8px; color: var(--muted); }
+.knob { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 2px; border-radius: 4px; }
+.knob:hover { background: var(--paper); }
+.parts { display: flex; gap: 10px; align-items: flex-end; }
+.part { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.dial { width: 62px; height: 62px; touch-action: none; }
+.dial.pot { width: 40px; height: 40px; }
+.dial .tick { stroke: var(--muted); stroke-width: 1; }
+.dial .skirt { fill: var(--ink); }
+.dial .knurl { fill: none; stroke: var(--paper); stroke-opacity: 0.25; stroke-width: 3; stroke-dasharray: 1.3 1.7; }
+.dial .cap { fill: var(--ink); stroke: var(--paper); stroke-opacity: 0.35; stroke-width: 1; }
+.dial .ptr { stroke: var(--paper); stroke-width: 2.5; stroke-linecap: round; transform-origin: 0 0; }
+.dial:focus-visible { outline: 2px solid var(--accent); border-radius: 50%; }
+.led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: var(--rule); }
+.knob.changed .led { background: #ff3b30; box-shadow: 0 0 6px #ff3b30; }
+.part input[type="range"] { appearance: none; -webkit-appearance: none; background: none; border: 0; padding: 0; margin: 0; }
+/* fader: thin groove, small dark cap with a light centre line */
+input[type="range"].fader { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 64px;
+  background: linear-gradient(var(--rule), var(--rule)) center / 3px 100% no-repeat; }
+.fader::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 11px; border-radius: 3px; border: 0;
+  background: linear-gradient(var(--paper), var(--paper)) center / 100% 1.5px no-repeat, var(--ink); }
+.fader::-moz-range-thumb { width: 20px; height: 11px; border-radius: 3px; border: 0;
+  background: linear-gradient(var(--paper), var(--paper)) center / 100% 1.5px no-repeat, var(--ink); }
+.kd { display: none; position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 5; background: var(--ink); color: var(--paper);
+  width: max-content; max-width: 260px; font-size: 13px; line-height: 1.35; padding: 6px 9px; border-radius: 3px; pointer-events: none; }
+.knob:hover .kd, .knob:has(.dial:focus-visible) .kd { display: block; }  /* hover or keyboard focus; a mouse click must not pin it */
+.knob .k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.knob.changed .k { color: var(--accent); }
+.knob input[type="number"] { width: 58px; text-align: center; }
+.knob small { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+/* binary switch (not used yet): fixed colour, state is shown by an LED next to it */
+.tog { position: relative; width: 36px; height: 20px; border-radius: 10px; border: 1.5px solid var(--ink); background: var(--paper); padding: 0; cursor: pointer; }
+.tog i { position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--ink); transition: left .12s; }
+.tog.on i { left: 18px; }
+.num { display: flex; align-items: baseline; gap: 3px; }
+.num em { font-family: var(--mono); font-style: normal; font-size: 10px; color: var(--muted); min-width: 22px; }
 button.act, button.ghost { font: inherit; font-size: 14px; border-radius: 2px; padding: 4px 16px; cursor: pointer; border: 1px solid var(--ink); }
 button.act { background: var(--ink); color: var(--paper); }
 button.ghost { background: none; color: var(--ink); border-color: var(--rule); }
@@ -212,10 +243,25 @@ details.tbl summary { cursor: pointer; color: var(--muted); }
 .viz .lab-a-t { fill: var(--accent); font-family: var(--mono); font-size: 11px; }
 
 footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+/* chapter nav: fixed left, appears after scrolling past the header; needs spare margin, so wide screens only */
+.sidenav { display: none; }
+@media (min-width: 1440px) {
+  .sidenav { display: flex; flex-direction: column; position: fixed; top: 50%; left: 16px; width: 230px; transform: translateY(-50%);
+    gap: 2px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .sidenav.show { opacity: 1; pointer-events: auto; }
+  .sidenav a { color: var(--muted); text-decoration: none; display: flex; gap: 8px; padding: 3px 0 3px 8px; border-left: 2px solid var(--rule); }
+  .sidenav a:hover { color: var(--accent); }
+  .sidenav a.cur { color: var(--ink); border-left-color: var(--accent); }
+  .sidenav .n { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 2px; }
+}
 </style>
 </head>
 <body>
 <div id="app" class="page" v-cloak>
+
+  <nav class="sidenav" :class="{ show: navShow }" aria-label="Chapters">
+    <a v-for="s in sections" :key="s.id" :href="'#' + s.id" :class="{ cur: s.id === cur }"><span class="n">{{ s.n }}</span>{{ s.title }}</a>
+  </nav>
 
   <header class="mast">
     <div class="kicker">Paper 1 · Baseline · Live poster (draft)</div>
@@ -223,7 +269,7 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
     <div class="byline">Rafael Silva · Doctoral research · {{ today }}</div>
     <div class="toolbar">
       <span class="byline">A scrolling account of each development phase: what was built, how, and why.</span>
-      <button @click="toggleTheme" :aria-label="'Switch to ' + (dark ? 'light' : 'dark') + ' theme'">{{ dark ? 'Light' : 'Dark' }} theme</button>
+      <button class="theme" @click="toggleTheme" :aria-label="'Switch to ' + (dark ? 'light' : 'dark') + ' theme'">{{ dark ? 'Light' : 'Dark' }} theme</button>
     </div>
     <p class="abstract">
       A building should keep every occupant comfortable with the fewest manual interventions, and
@@ -287,7 +333,7 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
 
           <g v-for="n in nodes" :key="n.id" :class="['node', n.dashed && 'dashed', sel === n.id && 'sel']"
              tabindex="0" role="button" :aria-label="n.title + ': show how and why'" :aria-pressed="sel === n.id"
-             @click="sel = n.id" @keydown.enter.prevent="sel = n.id" @keydown.space.prevent="sel = n.id">
+             @click="sel = sel === n.id ? null : n.id" @keydown.enter.prevent="sel = sel === n.id ? null : n.id" @keydown.space.prevent="sel = sel === n.id ? null : n.id">
             <rect :x="n.x" :y="n.y" :width="n.w" :height="n.h" rx="2"/>
             <text class="title" :x="n.x + 14" :y="n.y + 28">{{ n.title }}</text>
             <circle :cx="n.x + n.w - 14" :cy="n.y + 22" r="4" :class="'st-' + n.status"/>
@@ -303,6 +349,20 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
           </g>
         </svg>
       </div>
+      <div class="detail" id="detail-arch" v-if="selected" aria-live="polite">
+    <h4>{{ selected.title }}</h4>
+    <div class="meta">
+      <span><b :style="{ color: 'var(--' + selected.status + ')' }">● {{ statusText[selected.status] }}</b></span>
+      <span v-if="selected.where">{{ selected.where }}</span>
+    </div>
+    <div class="cols">
+      <div><h3>How</h3><ul><li v-for="(t, i) in selected.how" :key="i" v-html="t"></li></ul></div>
+      <div><h3>Why</h3><ul><li v-for="(t, i) in selected.why" :key="i" v-html="t"></li></ul></div>
+    </div>
+    <div class="refs" v-if="selected.refs">
+      <a v-for="r in selected.refs" :key="r[1]" :href="r[1]" target="_blank" rel="noopener">{{ r[0] }}</a>
+    </div>
+  </div>
       <div class="legend" aria-label="Legend">
         <span><i class="dot" style="background:var(--done)"></i>built</span>
         <span><i class="dot" style="background:var(--wip)"></i>in progress</span>
@@ -313,23 +373,9 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
       </div>
       <figcaption><b>Figure 1.</b> Concept architecture. The hidden truth (dashed) reaches evaluation
         only; the builder never reads it. Head B consumes Head A's <i>μ</i> and <i>σ</i>, so an uncertain
-        person counts less in a shared room. Select a block for how and why.</figcaption>
+        person counts less in a shared room. Click a block for how and why; click it again to close.</figcaption>
     </figure>
 
-    <div class="detail" v-if="selected" aria-live="polite">
-      <h4>{{ selected.title }}</h4>
-      <div class="meta">
-        <span><b :style="{ color: 'var(--' + selected.status + ')' }">● {{ statusText[selected.status] }}</b></span>
-        <span v-if="selected.where">{{ selected.where }}</span>
-      </div>
-      <div class="cols">
-        <div><h3>How</h3><ul><li v-for="(t, i) in selected.how" :key="i" v-html="t"></li></ul></div>
-        <div><h3>Why</h3><ul><li v-for="(t, i) in selected.why" :key="i" v-html="t"></li></ul></div>
-      </div>
-      <div class="refs" v-if="selected.refs">
-        <a v-for="r in selected.refs" :key="r[1]" :href="r[1]" target="_blank" rel="noopener">{{ r[0] }}</a>
-      </div>
-    </div>
   </section>
 
   <!-- 3..9: skeleton, filled in #30 (demos) and #33 (content) -->
@@ -365,14 +411,14 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
             <desc id="schema-desc">Users are located in spaces; sensors are in spaces; devices are installed in spaces; actuators act on devices; spaces are adjacent to spaces. The prefers edge from user to device is a label only, never input. Camera and activity nodes are planned.</desc>
             <g v-for="e in schemaEdges" :key="e.id" :class="['schema-edge', schemaSel === e.id && 'sel']" tabindex="0" role="button"
                :aria-label="e.title + ': show how and why'" :aria-pressed="schemaSel === e.id"
-               @click="schemaSel = e.id" @keydown.enter.prevent="schemaSel = e.id" @keydown.space.prevent="schemaSel = e.id">
+               @click="schemaSel = schemaSel === e.id ? null : e.id" @keydown.enter.prevent="schemaSel = schemaSel === e.id ? null : e.id" @keydown.space.prevent="schemaSel = schemaSel === e.id ? null : e.id">
               <path :d="e.d" class="edge-hit"/>
               <path :d="e.d" :class="['edge', e.kind]" :marker-end="e.kind === 'label' ? 'url(#arr-loop)' : 'url(#arr)'"/>
               <text :x="e.lx" :y="e.ly" :text-anchor="e.anchor || 'middle'" :class="['edge-label', e.kind === 'label' && 'loop']">{{ e.label }}</text>
             </g>
             <g v-for="n in schemaNodes" :key="n.id" :class="['node', n.status === 'plan' && 'dashed', schemaSel === n.id && 'sel']"
                tabindex="0" role="button" :aria-label="n.title + ' node: show how and why'" :aria-pressed="schemaSel === n.id"
-               @click="schemaSel = n.id" @keydown.enter.prevent="schemaSel = n.id" @keydown.space.prevent="schemaSel = n.id">
+               @click="schemaSel = schemaSel === n.id ? null : n.id" @keydown.enter.prevent="schemaSel = schemaSel === n.id ? null : n.id" @keydown.space.prevent="schemaSel = schemaSel === n.id ? null : n.id">
               <rect :x="n.x" :y="n.y" width="200" height="84" rx="2"/>
               <text class="title" :x="n.x + 14" :y="n.y + 28">{{ n.title }}</text>
               <circle :cx="n.x + 186" :cy="n.y + 22" r="4" :class="'st-' + n.status"/>
@@ -380,6 +426,17 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
             </g>
           </svg>
         </div>
+        <div class="detail" id="detail-schema" v-if="schemaSelected" aria-live="polite">
+        <h4>{{ schemaSelected.title }}</h4>
+        <div class="meta">
+          <span><b :style="{ color: 'var(--' + schemaSelected.status + ')' }">● {{ statusText[schemaSelected.status] }}</b></span>
+          <span>{{ schemaSelected.where }}</span>
+        </div>
+        <div class="cols">
+          <div><h3>How</h3><ul><li v-for="(t, i) in schemaSelected.how" :key="i" v-html="t"></li></ul></div>
+          <div><h3>Why</h3><ul><li v-for="(t, i) in schemaSelected.why" :key="i" v-html="t"></li></ul></div>
+        </div>
+      </div>
         <div class="legend">
           <span><i class="dot" style="background:var(--done)"></i>built</span>
           <span><i class="dot" style="background:var(--plan)"></i>planned (dashed)</span>
@@ -392,17 +449,6 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
           model must predict, so it never appears as input. Select a node or edge for its features and the reasoning
           behind it.</figcaption>
       </figure>
-      <div class="detail" v-if="schemaSelected" aria-live="polite">
-        <h4>{{ schemaSelected.title }}</h4>
-        <div class="meta">
-          <span><b :style="{ color: 'var(--' + schemaSelected.status + ')' }">● {{ statusText[schemaSelected.status] }}</b></span>
-          <span>{{ schemaSelected.where }}</span>
-        </div>
-        <div class="cols">
-          <div><h3>How</h3><ul><li v-for="(t, i) in schemaSelected.how" :key="i" v-html="t"></li></ul></div>
-          <div><h3>Why</h3><ul><li v-for="(t, i) in schemaSelected.why" :key="i" v-html="t"></li></ul></div>
-        </div>
-      </div>
       <h3 style="margin-top:28px">Left out on purpose</h3>
       <table class="obj">
         <thead><tr><th>Not in the graph</th><th>Why</th></tr></thead>
@@ -422,18 +468,37 @@ footer { margin-top: 72px; padding-top: 16px; border-top: 1px solid var(--ink); 
       <p class="note" v-if="!live">Static export: knobs are read-only. Run <code>python server.py</code> locally to simulate.</p>
       <p class="note" v-else>Exploration only: every number in a paper comes from a scripted run (D16). A run writes <code>ui.db</code>, never <code>sim.db</code>.</p>
       <div class="knobs" v-if="knobEdits">
-        <div v-for="(v, k) in knobEdits" :key="k" :class="['knob', k in changedKnobs && 'changed']">
-          <span class="k">{{ k }}</span>
-          <span class="sub" v-if="typeof v === 'number'">
-            <input type="number" step="any" v-model.number="knobEdits[k]" :disabled="!live" :aria-label="k">
-          </span>
-          <span class="sub" v-else>
-            <span v-for="(_, i) in v" :key="i" class="pair">
-              <small v-if="!Array.isArray(v)">{{ i }}</small>
-              <input type="number" step="any" v-model.number="knobEdits[k][i]" :disabled="!live" :aria-label="k + ' ' + i">
-            </span>
-          </span>
-        </div>
+        <fieldset class="grp" v-for="[g, ks] in KNOB_GROUPS" :key="g">
+          <legend>{{ g }}</legend>
+          <div v-for="k in ks" :key="k" :class="['knob', k in changedKnobs && 'changed']" tabindex="0"
+               @dblclick="$event.target.type !== 'number' && resetOne(k)">
+            <div class="parts">
+              <div class="part" v-for="p in parts(k)" :key="p.i">
+                <input v-if="styleOf(k) === 'fader'" type="range" class="fader" :min="KNOB_INFO[k][1]" :max="KNOB_INFO[k][2]"
+                       :step="(KNOB_INFO[k][2] - KNOB_INFO[k][1]) / 100" :value="get(k, p.i)" :disabled="!live"
+                       :aria-label="k + ' ' + p.label" @input="set(k, p.i, +$event.target.value)">
+                <svg v-else :class="['dial', styleOf(k)]" viewBox="-26 -26 52 52" role="slider" tabindex="0"
+                     :aria-label="k" :aria-valuenow="get(k, p.i)" @pointerdown="dialDrag($event, k, p.i)"
+                     @keydown.up.prevent="nudge(k, p.i, 1)" @keydown.down.prevent="nudge(k, p.i, -1)"
+                     :style="{ cursor: live ? 'ns-resize' : 'default' }">
+                  <line v-for="n in 11" :key="n" class="tick" :style="{ transform: 'rotate(' + (-135 + 27 * (n - 1)) + 'deg)' }" y1="-24" y2="-21"/>
+                  <template v-if="styleOf(k) === 'knob'">
+                    <circle class="skirt" r="18"/><circle class="knurl" r="17"/>
+                    <circle class="cap" r="12"/>
+                  </template>
+                  <circle v-else class="skirt" r="15"/>
+                  <line class="ptr" :style="{ transform: 'rotate(' + dialAngle(k, p.i) + 'deg)' }"
+                        :y1="styleOf(k) === 'knob' ? -13 : -5" :y2="styleOf(k) === 'knob' ? -18 : -13"/>
+                </svg>
+                <span class="num"><input type="number" step="any" :value="get(k, p.i)" :disabled="!live" :aria-label="k + ' ' + p.label"
+                       @input="set(k, p.i, +$event.target.value)"><em>{{ KNOB_UNITS[k] }}</em></span>
+                <small v-if="p.label">{{ p.label }}</small>
+              </div>
+            </div>
+            <span class="k"><i class="led"></i>{{ k }}</span>
+            <span class="kd" role="tooltip">{{ KNOB_INFO[k][0] }}<template v-if="live && k in changedKnobs"> <i>Double-click to reset.</i></template></span>
+          </div>
+        </fieldset>
       </div>
       <div class="controls">
         <label>houses<input type="number" min="1" :max="caps.houses" v-model.number="runArgs.houses" :disabled="!live"></label>
@@ -921,14 +986,42 @@ function updateGraph(el, w, animate) {
 createAppSafely();
 function createAppSafely() {
   const { createApp } = Vue;
+  // [what it does and influences, dial min, dial max]; mirrors knobs.py
+  const KNOB_INFO = {
+    pref_mean: ["Average preferred temperature (°C). Shifts every setpoint people ask for.", 16, 28],
+    pref_sd: ["Spread of preferred temperature between people (°C). Larger = more disagreement in shared rooms.", 0, 4],
+    tol_range: ["Min / max tolerance (°C): how far from preference before someone is uncomfortable and presses.", 0, 3],
+    chronotype_sd: ["Minutes each person's whole routine is shifted from their type. Blurs when people are home.", 0, 120],
+    p_has_HA: ["Chance a house has Home Assistant, so named presses are possible.", 0, 1],
+    t_out: ["Outdoor temperature (°C), constant. The room drifts toward it when HVAC is off.", -10, 35],
+    t_start: ["Indoor temperature at minute 0 (°C).", 5, 30],
+    tau_loss: ["Minutes for a room to drift toward outdoors with HVAC off. Larger = better insulated.", 10, 480],
+    tau_hvac: ["Minutes for HVAC to move the room toward the setpoint. Smaller = stronger HVAC.", 2, 120],
+    sensor_every: ["Minutes between sensor readings. Sets the time resolution the model sees.", 1, 60],
+    sensor_noise: ["Std of reading noise (°C). Higher makes preference harder to recover.", 0, 2],
+    p_HA: ["When a house has HA: chance a press is logged via HA (named) rather than the remote (anonymous).", 0, 1],
+    cooldown: ["Minutes before the same person can press again. Limits press frequency.", 0, 240],
+    hvac_styles: ["Share of people per habit: leave_on (never turns off), off_on_leave, until_comfortable. Shapes the on/off press pattern.", 0, 1],
+    comfortable_band: ["°C: until_comfortable people turn HVAC off when within this of their preference.", 0, 2],
+  };
+  // synth-panel layout: group outline + widget per knob (knob = big knob, pot = small trim pot, fader = vertical slider)
+  const KNOB_GROUPS = [
+    ["Population", ["pref_mean", "pref_sd", "chronotype_sd", "tol_range", "p_has_HA"]],
+    ["Physics", ["t_out", "t_start", "tau_loss", "tau_hvac"]],
+    ["Sensing", ["sensor_every", "sensor_noise"]],
+    ["Behaviour", ["p_HA", "cooldown", "comfortable_band", "hvac_styles"]],
+  ];
+  const KNOB_UNITS = { pref_mean: "°C", pref_sd: "°C", tol_range: "°C", chronotype_sd: "min", t_out: "°C", t_start: "°C", tau_loss: "min",
+    tau_hvac: "min", sensor_every: "min", sensor_noise: "°C", cooldown: "min", comfortable_band: "°C" };  // probabilities and shares: unitless 0–1
+  const KNOB_STYLE = { p_has_HA: "fader", p_HA: "fader", hvac_styles: "fader", tol_range: "pot", sensor_every: "pot", cooldown: "pot", comfortable_band: "pot", sensor_noise: "pot" };
   createApp({
     data() {
       return {
-        nodes, edges, sel: "sim", dark: false,
-        schemaNodes, schemaEdges, schemaSel: "located_in",
+        nodes, edges, sel: null, dark: false, navShow: false, cur: "",
+        schemaNodes, schemaEdges, schemaSel: null,
         // live demos (#30)
         live: false, demoError: "", running: false,
-        knobDefaults: null, knobEdits: null, caps: { houses: 10, days: 14 },
+        KNOB_INFO, KNOB_GROUPS, KNOB_UNITS, knobDefaults: null, knobEdits: null, caps: { houses: 10, days: 14 },
         runArgs: { houses: 5, days: 7, seed: 0 },
         dbName: "ui", meta: null, buildingList: [], b: 0, day: 0,
         tl: null, gr: null, wi: 0, playing: null,
@@ -999,9 +1092,6 @@ function createAppSafely() {
         return this.gr ? this.gr.windows.filter(w => w.label_a.length || Object.keys(w.label_b).length).length : 0;
       },
     },
-    watch: {
-      wi() { if (this.win) updateGraph(document.getElementById("gr-svg"), this.win, true); },
-    },
     methods: {
       roomColor,
       houseLabel(h) { return `h${h.id} · ${h.typology} · ${h.household.replace("_", " ")} · ${h.people}p${h.has_HA ? " · HA" : ""}`; },
@@ -1063,9 +1153,12 @@ function createAppSafely() {
         } catch (e) { this.demoError = `Run failed: ${e.message}`; }
         finally { this.running = false; }
       },
+      resetOne(k) {
+        if (this.live) this.knobEdits[k] = JSON.parse(JSON.stringify(this.knobDefaults[k]));
+      },
       resetKnobs() {
         const { n_houses, n_days, start, ...rest } = this.knobDefaults;
-        this.knobEdits = structuredClone(rest);
+        this.knobEdits = JSON.parse(JSON.stringify(rest));  // not structuredClone: knobDefaults is a reactive proxy, which it rejects
       },
       togglePlay() {
         if (this.playing) { clearInterval(this.playing); this.playing = null; return; }
@@ -1075,11 +1168,45 @@ function createAppSafely() {
           this.wi++;
         }, 450);
       },
+      styleOf: k => KNOB_STYLE[k] || "knob",
+      parts(k) {  // scalar -> one control; [lo, hi] -> two; {a, b, c} -> one per key
+        const v = this.knobEdits[k];
+        if (typeof v === "number") return [{ i: null, label: "" }];
+        return Object.keys(v).map(i => ({ i, label: Array.isArray(v) ? ["min", "max"][i] : i }));
+      },
+      get(k, i) { return i === null ? this.knobEdits[k] : this.knobEdits[k][i]; },
+      set(k, i, x) { if (i === null) this.knobEdits[k] = x; else this.knobEdits[k][i] = x; },
+      nudge(k, i, dir) {
+        if (!this.live) return;
+        const [, lo, hi] = KNOB_INFO[k], v = this.get(k, i) + dir * (hi - lo) / 100;
+        this.set(k, i, +Math.min(hi, Math.max(lo, v)).toFixed(3));
+      },
+      frac(k, i) {
+        const [, lo, hi] = KNOB_INFO[k];
+        return Math.min(1, Math.max(0, (this.get(k, i) - lo) / (hi - lo)));
+      },
+      dialAngle(k, i) {  // -135°..+135° across the knob's range
+        return -135 + 270 * this.frac(k, i);
+      },
+      dialDrag(e, k, i) {  // drag up/down to turn; 200px = full range
+        if (!this.live) return;
+        const [, lo, hi] = KNOB_INFO[k], y0 = e.clientY, v0 = this.get(k, i);
+        const move = ev => this.set(k, i, +Math.min(hi, Math.max(lo, v0 + (y0 - ev.clientY) / 200 * (hi - lo))).toFixed(3));
+        const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
+        addEventListener("pointermove", move); addEventListener("pointerup", up);
+      },
+      reveal(id) {
+        this.$nextTick(() => document.getElementById(id)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+      },
       toggleTheme() {
         this.dark = !this.dark;
         document.documentElement.dataset.theme = this.dark ? "dark" : "light";
         try { localStorage.setItem("theme", document.documentElement.dataset.theme); } catch (e) {}
       },
+    },
+    watch: {  // bring the description panel into view next to the clicked block
+      sel(v) { v && this.reveal("detail-arch"); }, schemaSel(v) { v && this.reveal("detail-schema"); },
+      wi() { if (this.win) updateGraph(document.getElementById("gr-svg"), this.win, true); },
     },
     mounted() {
       let saved = null;
@@ -1087,6 +1214,13 @@ function createAppSafely() {
       if (saved) document.documentElement.dataset.theme = saved;
       this.dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
       this.initDemos();
+      const onScroll = () => {
+        this.navShow = scrollY > document.querySelector("header.mast").offsetHeight - 100;
+        let cur = "";  // last section whose top has passed the upper third of the viewport
+        for (const x of this.sections) { const el = document.getElementById(x.id); if (el && el.getBoundingClientRect().top < innerHeight / 3) cur = x.id; }
+        this.cur = cur;
+      };
+      addEventListener("scroll", onScroll, { passive: true }); onScroll();
     },
   }).mount("#app");
 }
